@@ -8,6 +8,7 @@ import { TAB_PANEL_TYPE } from "@foxglove/studio-base/util/globalConstants";
 
 import dataSourceInfoThumbnail from "./DataSourceInfo/thumbnail.png";
 import gaugeThumbnail from "./Gauge/thumbnail.png";
+import dashboardThumbnail from "./Dashboard/thumbnail.png";
 import imageViewThumbnail from "./Image/thumbnail.png";
 import indicatorThumbnail from "./Indicator/thumbnail.png";
 import logThumbnail from "./Log/thumbnail.png";
@@ -180,6 +181,13 @@ export const getBuiltin: (t: TFunction<"panels">) => PanelInfo[] = (t) => [
     thumbnail: tabThumbnail,
     module: async () => await import("./Tab"),
     hasCustomToolbar: true,
+  },
+  {
+    title: t("dashboard"),
+    type: "Dashboard",
+    description: t("dashboardDescription"),
+    thumbnail: dashboardThumbnail,
+    module: async () => await import("./Dashboard"),
   },
 ];
 

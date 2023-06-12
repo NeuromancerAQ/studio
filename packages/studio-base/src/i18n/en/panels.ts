@@ -10,6 +10,8 @@ export const panels = {
   dataSourceInfoDescription: "View details like topics and timestamps for the current data source.",
   gauge: "Gauge",
   gaugeDescription: "Display a colored gauge based on a continuous value.",
+  dashboard: "Dashboard",
+  dashboardDescription: "Dashboard showing current vehicle information.",
   image: "Image",
   imageDescription: "Display annotated images.",
   indicator: "Indicator",

@@ -141,6 +141,11 @@ export function makeConfig(
         },
         { test: /\.(md|template)$/, type: "asset/source" },
         {
+          test: /\.svg$/i,
+          type: 'asset',
+          resourceQuery: /url/, // *.svg?url
+        },
+        {
           test: /\.svg$/,
           loader: "@svgr/webpack", // foxglove-depcheck-used: @svgr/webpack
           options: {
@@ -148,6 +153,7 @@ export function makeConfig(
               plugins: [{ removeViewBox: false }, { removeDimensions: false }],
             },
           },
+          resourceQuery: { not: [/url/] }
         },
         { test: /\.ne$/, loader: "nearley-loader" }, // foxglove-depcheck-used: nearley-loader
         {
