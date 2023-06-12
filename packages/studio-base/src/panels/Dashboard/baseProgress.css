@@ -1,0 +1,28 @@
+.tadviz-progress {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    height: 6px;
+}
+.tadviz-progress .tadviz-outer {
+    width: 100%;
+    height: 100%;
+    border-radius: 5px;
+    background: rgb(120, 120, 120);
+}
+.tadviz-progress .tadviz-inner {
+    /*width: v-bind("progressWidth");*/
+    height: 100%;
+    transition: 0.2s;
+    border-radius: 5px;
+    background: linear-gradient(
+            90deg,
+            rgb(61, 91, 243) 0%,
+            rgb(86, 150, 247) 100%
+    );
+}
+.tadviz-progress .tadviz-progress-percentage {
+    white-space: nowrap;
+    margin-left: 5px;
+    font-size: calc(var(--base-fontsize) + 3px);
+}
