@@ -437,7 +437,6 @@ function UtoGauge({ config, saveConfig }: Props): JSX.Element {
       <Stack
         fullHeight
         flex
-
         gap={2}
         paddingY={2}
         paddingX={3}

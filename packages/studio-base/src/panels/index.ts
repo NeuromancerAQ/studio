@@ -27,6 +27,7 @@ import topicGraphThumbnail from "./TopicGraph/thumbnail.png";
 import variableSliderThumbnail from "./VariableSlider/thumbnail.png";
 import diagnosticStatusThumbnail from "./diagnostics/thumbnails/diagnostic-status.png";
 import diagnosticSummaryThumbnail from "./diagnostics/thumbnails/diagnostic-summary.png";
+import baseInfoThumbnail from "./BaseInfo/thumbnail.png";
 
 export const getBuiltin: (t: TFunction<"panels">) => PanelInfo[] = (t) => [
   {
@@ -195,6 +196,13 @@ export const getBuiltin: (t: TFunction<"panels">) => PanelInfo[] = (t) => [
     description: t("dashboardDescription"),
     thumbnail: dashboardThumbnail,
     module: async () => await import("./UtoGauge"),
+  },
+  {
+    title: "基本信息（Beta）",
+    type: "BaseInfo",
+    description: t("dashboardDescription"),
+    thumbnail: baseInfoThumbnail,
+    module: async () => await import("./BaseInfo"),
   },
 ];
 
