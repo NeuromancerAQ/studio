@@ -189,6 +189,13 @@ export const getBuiltin: (t: TFunction<"panels">) => PanelInfo[] = (t) => [
     thumbnail: dashboardThumbnail,
     module: async () => await import("./Dashboard"),
   },
+  {
+    title: "仪表盘（Beta）",
+    type: "UtoGauge",
+    description: t("dashboardDescription"),
+    thumbnail: dashboardThumbnail,
+    module: async () => await import("./UtoGauge"),
+  },
 ];
 
 export const getDebug: (t: TFunction<"panels">) => PanelInfo[] = (t) => [
