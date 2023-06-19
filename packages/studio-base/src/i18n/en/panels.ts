@@ -4,7 +4,6 @@
 
 export const panels = {
   "3D": "3D",
-  newImage: "Image (Beta)",
   "3DPanelDescription": "Display markers, camera images, meshes, URDFs, and more in a 3D scene.",
   dataSourceInfo: "Data Source Info",
   dataSourceInfoDescription: "View details like topics and timestamps for the current data source.",
@@ -13,6 +12,7 @@ export const panels = {
   dashboard: "Dashboard",
   dashboardDescription: "Dashboard showing current vehicle information.",
   image: "Image",
+  imageLegacy: "Image (Legacy)",
   imageDescription: "Display annotated images.",
   indicator: "Indicator",
   indicatorDescription: "Display a colored and/or textual indicator based on a threshold value.",
