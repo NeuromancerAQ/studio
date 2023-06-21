@@ -57,49 +57,49 @@ export function useSettingsTree(
           error: pathParseError,
           validTypes: supportedDataTypes,
         },
-        minValue: {
-          label: "Min",
-          input: "number",
-          value: config.minValue,
-        },
-        maxValue: {
-          label: "Max",
-          input: "number",
-          value: config.maxValue,
-        },
-        colorMode: {
-          label: "Color mode",
-          input: "select",
-          value: config.colorMode,
-          options: [
-            { label: "Color map", value: "colormap" },
-            { label: "Gradient", value: "gradient" },
-          ],
-        },
-        ...(config.colorMode === "colormap" && {
-          colorMap: {
-            label: "Color map",
-            input: "select",
-            value: config.colorMap,
-            options: [
-              { label: "Red to green", value: "red-yellow-green" },
-              { label: "Rainbow", value: "rainbow" },
-              { label: "Turbo", value: "turbo" },
-            ],
-          },
-        }),
-        ...(config.colorMode === "gradient" && {
-          gradient: {
-            label: "Gradient",
-            input: "gradient",
-            value: config.gradient,
-          },
-        }),
-        reverse: {
-          label: "Reverse",
-          input: "boolean",
-          value: config.reverse,
-        },
+        // minValue: {
+        //   label: "Min",
+        //   input: "number",
+        //   value: config.minValue,
+        // },
+        // maxValue: {
+        //   label: "Max",
+        //   input: "number",
+        //   value: config.maxValue,
+        // },
+        // colorMode: {
+        //   label: "Color mode",
+        //   input: "select",
+        //   value: config.colorMode,
+        //   options: [
+        //     { label: "Color map", value: "colormap" },
+        //     { label: "Gradient", value: "gradient" },
+        //   ],
+        // },
+        // ...(config.colorMode === "colormap" && {
+        //   colorMap: {
+        //     label: "Color map",
+        //     input: "select",
+        //     value: config.colorMap,
+        //     options: [
+        //       { label: "Red to green", value: "red-yellow-green" },
+        //       { label: "Rainbow", value: "rainbow" },
+        //       { label: "Turbo", value: "turbo" },
+        //     ],
+        //   },
+        // }),
+        // ...(config.colorMode === "gradient" && {
+        //   gradient: {
+        //     label: "Gradient",
+        //     input: "gradient",
+        //     value: config.gradient,
+        //   },
+        // }),
+        // reverse: {
+        //   label: "Reverse",
+        //   input: "boolean",
+        //   value: config.reverse,
+        // },
       },
     }),
     [error, config, pathParseError],
