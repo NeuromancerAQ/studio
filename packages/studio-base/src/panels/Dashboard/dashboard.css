@@ -19,6 +19,7 @@
 
 .tadviz-vehicle-driving-information {
     padding: 0;
+    min-width: 570px;
     color: #fff;
     border-radius: 10px 10px 0 0;
     background: rgba(17, 21, 27, 0.9);
@@ -227,7 +228,7 @@
     padding: 17px;
     height: 165px;
     background: url("@foxglove/studio-base/assets/images/VehicleDrivingInformation/speedInstrumentPanel.svg?url")
-    no-repeat center/90%;
+    no-repeat center/contain;
 }
 
 .tadviz-speed-chart .tadviz-speed {
@@ -263,7 +264,7 @@
     padding: 17px;
     height: 165px;
     background: url("@foxglove/studio-base/assets/images/VehicleDrivingInformation/accelInstrumentPanel.svg?url")
-    no-repeat center/90%;
+    no-repeat center/contain;
 }
 
 .tadviz-vehicle-angle-chart .tadviz-turn-corner {

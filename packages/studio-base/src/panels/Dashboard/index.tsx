@@ -6,7 +6,6 @@ import { last } from "lodash";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 
-
 import {
   MessagePipelineContext,
   useMessagePipeline,
@@ -21,9 +20,8 @@ import { BaseProgress } from "./BaseProgress";
 
 import { settingsActionReducer, useSettingsTree } from "./settings";
 import type { Config } from "./types";
-
+import Stack from "@foxglove/studio-base/components/Stack";
 import "./dashboard.css";
-import steeringWheelImgSrc from "../../assets/images/VehicleDrivingInformation/steering-wheel/0.svg"
 import { Topic } from "@foxglove/studio-base/players/types";
 // import { useDataSourceInfo } from "@foxglove/studio-base/PanelAPI";
 import { useMessageDataItem } from "@foxglove/studio-base/components/MessagePathSyntax/useMessageDataItem";
@@ -37,7 +35,7 @@ type Props = {
 };
 
 const defaultConfig: Config = {
-  topicPath: "example_msg",
+  topicPath: "/utosim/dashboard",
 };
 
 type State = {
@@ -157,7 +155,7 @@ const longitudinalControlModeTxt = [
   "DISTANCE_MODE",
   "PRECISE_MOVE_MODE",
 ];
-const behaviorTypeTxt = {
+const behavior_typeTxt = {
   0: "INVALID",
   1: "LANE_KEEP",
   20: "BREAKTHROUGH",
@@ -198,6 +196,7 @@ function keepDecimalPlaces(num: number | string, decimalPlaces = 3) {
 
 function Dashboard({ config, saveConfig }: Props): JSX.Element {
   const { topicPath } = config;
+  saveConfig({ topicPath: defaultConfig });
 
   const topicRosPath: RosPath | undefined = React.useMemo(
     () => parseRosPath(topicPath),
@@ -208,39 +207,37 @@ function Dashboard({ config, saveConfig }: Props): JSX.Element {
   const cachedGetMessagePathDataItems = useCachedGetMessagePathDataItems([topicPath]);
   const msg = msgs?.[0];
   const cachedMessages = msg ? cachedGetMessagePathDataItems(topicPath, msg) ?? [] : [];
-  const firstCachedMessage = cachedMessages[0];
-
-  console.log(firstCachedMessage, 'fffff');
+  const firstCachedMessage = cachedMessages[0]?.value;
 
   const vehicleDrivingInfo = ({
     speed: "N/A",
     accel: "N/A",
-    idcReady: false,
-    behaviorType: "N/A",
-    carInfo: {
+    idc_ready: false,
+    behavior_type: "N/A",
+    car_info: {
       carId: "N/A",
       planner: "N/A",
     },
-    drivingInfo: {
-      autoDrive: false,
-      driveMode: 0,
+    drive_info: {
+      auto_drive: false,
+      drive_mode: 0,
       gear: "N/A",
-      steeringWheelAngle: "N/A",
-      trailerTransfer: "N/A",
-      eulerAngle: "N/A",
+      steering_wheel_angle: "N/A",
+      trailer_transfer: "N/A",
+      euler_angle: "N/A",
       braking: 0,
       throttle: 0,
-      accY: 0,
-      yawRate: 0,
-      boxLockedOn: false,
+      acc_y: 0,
+      yaw_rate: 0,
+      box_locked_on: false,
     },
     expected: {
-      expectedSpeed: "N/A",
-      expectedAcceleration: "N/A",
-      desiredGear: -1,
-      designSpeedLimit: "N/A",
+      expected_speed: "N/A",
+      expected_accel: "N/A",
+      desired_gear: -1,
+      design_speed_limit: "N/A",
     },
-    frontDistance: "N/A",
+    front_distance: "N/A",
     light: {
       breakLight: false,
       dangerousWarningLight: false,
@@ -255,28 +252,21 @@ function Dashboard({ config, saveConfig }: Props): JSX.Element {
     },
     self: {
       dtc: "N/A",
-      lateralControlMode: -1,
-      longitudinalControlMode: -1,
-      roadError: "N/A",
+      lateral_control_mode: -1,
+      longitudinal_control_mode: -1,
+      road_error: "N/A",
     },
   })
   const [vehicleInfo, setVehicleInfo] = useState(vehicleDrivingInfo)
 
   useEffect(()=> {
-    setVehicleInfo(firstCachedMessage)
+    setVehicleInfo(firstCachedMessage || vehicleDrivingInfo)
   }, [firstCachedMessage])
 
   return (
     <>
       <PanelToolbar />
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          overflow: "hidden",
-          padding: 8,
-        }}
-      >
+      <Stack fullHeight overflowY="auto">
         <div className={"tadviz-vehicle-driving-information"}>
           <div className={"tadviz-charts"}>
             <div className={"tadviz-speed-chart tadviz-row tadviz-align-item-center"}>
@@ -291,7 +281,7 @@ function Dashboard({ config, saveConfig }: Props): JSX.Element {
                     src={require("@foxglove/studio-base/assets/images/VehicleDrivingInformation/leftTurnLight.svg?url")}
                   />
                 }
-                <span className={"tadviz-turning-angle"}>{vehicleInfo.drivingInfo.eulerAngle}°</span>
+                <span className={"tadviz-turning-angle"}>{vehicleInfo.drive_info.euler_angle}°</span>
                 {
                   vehicleInfo.light.rightTurnLight ? <img
                     src={require("@foxglove/studio-base/assets/images/VehicleDrivingInformation/rightTurnLightActive.svg?url")}
@@ -322,32 +312,32 @@ function Dashboard({ config, saveConfig }: Props): JSX.Element {
               <div className={"tadviz-row"}>
                 <div className={"tadviz-label"}>Planner</div>
                 <div className={"tadviz-value"}>
-                  { vehicleInfo.carInfo.planner }
+                  { vehicleInfo.car_info.planner }
                 </div>
               </div>
               <div className={"tadviz-row"}>
                 <div className={"tadviz-label"}>期望速度</div>
                 <div className={"tadviz-value"}>
-                  { vehicleInfo.expected.expectedSpeed } km/h
+                  { vehicleInfo.expected.expected_speed } km/h
                 </div>
               </div>
               <div className={"tadviz-row"}>
                 <div className={"tadviz-label"}>期望加速度</div>
                 <div className={"tadviz-value"}>
-                  { vehicleInfo.expected.expectedAcceleration } m/s²
+                  { vehicleInfo.expected.expected_accel } m/s²
                 </div>
               </div>
               <div className={"tadviz-row"}>
                 <div className={"tadviz-label"}>期望限速</div>
                 <div className={"tadviz-value"}>
-                  { vehicleInfo.expected.designSpeedLimit } km/h
+                  { vehicleInfo.expected.design_speed_limit } km/h
                 </div>
               </div>
               <div className={"tadviz-row"}>
                 <div className={"tadviz-label"}>期望挡位</div>
                 <div className={"tadviz-value"}>
                   {
-                    desiredGearTxt[vehicleInfo.expected.desiredGear] || "N/A"
+                    desiredGearTxt[vehicleInfo.expected.desired_gear] || "N/A"
                   }
                 </div>
               </div>
@@ -356,7 +346,7 @@ function Dashboard({ config, saveConfig }: Props): JSX.Element {
                 <div className={"tadviz-value"}>
                   {
                     lateralControlModeTxt[
-                      vehicleInfo.self.lateralControlMode
+                      vehicleInfo.self.lateral_control_mode
                       ] || "N/A"
                   }
                 </div>
@@ -366,7 +356,7 @@ function Dashboard({ config, saveConfig }: Props): JSX.Element {
                 <div className={"tadviz-value"}>
                   {
                     longitudinalControlModeTxt[
-                      vehicleInfo.self.longitudinalControlMode
+                      vehicleInfo.self.longitudinal_control_mode
                       ] || "N/A"
                   }
                 </div>
@@ -378,7 +368,7 @@ function Dashboard({ config, saveConfig }: Props): JSX.Element {
               <div className={"tadviz-row"}>
                 <div className={"tadviz-label"}>换道信息</div>
                 <div className={"tadviz-value"}>
-                  { behaviorTypeTxt[vehicleInfo.behaviorType] || "N/A" }
+                  { behavior_typeTxt[vehicleInfo.behavior_type] || "N/A" }
                 </div>
               </div>
             </div>
@@ -387,10 +377,10 @@ function Dashboard({ config, saveConfig }: Props): JSX.Element {
                 <div className={"tadviz-row tadviz-between"}>
                   <div className={"steering-wheel"}>
                     <img
-                      src={steeringWheelImgSrc}
+                      src={require("@foxglove/studio-base/assets/images/VehicleDrivingInformation/steering-wheel/0.svg?url")}
                       style={{
-                        transform: `rotateZ(${-vehicleInfo.drivingInfo
-                          .steeringWheelAngle}deg)`
+                        transform: `rotateZ(${-vehicleInfo.drive_info
+                          .steering_wheel_angle}deg)`
                       }}
                     />
                   </div>
@@ -398,19 +388,19 @@ function Dashboard({ config, saveConfig }: Props): JSX.Element {
                     <div className={"tadviz-row"}>
                       <div className={"tadviz-label"}>方向盘转角</div>
                       <div className={"tadviz-value"}>
-                        { vehicleInfo.drivingInfo.steeringWheelAngle } °
+                        { vehicleInfo.drive_info.steering_wheel_angle } °
                       </div>
                     </div>
                     <div className={"tadviz-row"}>
                       <div className={"tadviz-label"}>挂车转角</div>
                       <div className={"tadviz-value"}>
-                        { vehicleInfo.drivingInfo.trailerTransfer } °
+                        { vehicleInfo.drive_info.trailer_transfer } °
                       </div>
                     </div>
                     <div className={"tadviz-row"}>
                       <div className={"tadviz-label"}>横向误差</div>
                       <div className={"tadviz-value"}>
-                        { keepDecimalPlaces(vehicleInfo.self.roadError) }
+                        { keepDecimalPlaces(vehicleInfo.self.road_error) }
                       </div>
                     </div>
                   </div>
@@ -432,13 +422,13 @@ function Dashboard({ config, saveConfig }: Props): JSX.Element {
                 <div className={"tadviz-row"}>
                   <div className={"tadviz-label"}>横向加速度</div>
                   <div className={"tadviz-value"}>
-                    { vehicleInfo.drivingInfo.accY } m/s²
+                    { vehicleInfo.drive_info.acc_y } m/s²
                   </div>
                 </div>
                 <div className={"tadviz-row"}>
                   <div className={"tadviz-label"}>横摆角速度</div>
                   <div className={"tadviz-value"}>
-                    { vehicleInfo.drivingInfo.yawRate } rad/s
+                    { vehicleInfo.drive_info.yaw_rate } rad/s
                   </div>
                 </div>
               </div>
@@ -451,7 +441,7 @@ function Dashboard({ config, saveConfig }: Props): JSX.Element {
           {/*    <span>箱锁</span>*/}
           {/*    <el-icon>*/}
           {/*      <svg*/}
-          {/*        v-if="!vehicleDrivingInfo.drivingInfo.boxLockedOn"*/}
+          {/*        v-if="!vehicleDrivingInfo.drivingInfo.box_locked_on"*/}
           {/*        t="1661839696953"*/}
           {/*        className="icon"*/}
           {/*        style="*/}
@@ -503,7 +493,7 @@ function Dashboard({ config, saveConfig }: Props): JSX.Element {
           {/*    <span>idc: </span>*/}
           {/*    <span*/}
           {/*      className="tadviz-idc-point"*/}
-          {/*    :className="{ 'tadviz-idc-active': vehicleDrivingInfo.idcReady }"*/}
+          {/*    :className="{ 'tadviz-idc-active': vehicleDrivingInfo.idc_ready }"*/}
           {/*  ></span>*/}
           {/*  <span>Ready</span>*/}
           {/*</div>*/}
@@ -572,14 +562,12 @@ function Dashboard({ config, saveConfig }: Props): JSX.Element {
           {/*  />*/}
           {/*</div>*/}
         </div>
-      </div>
+      </Stack>
     </>
   );
 }
 
-Dashboard.panelType = "Table";
-Dashboard.defaultConfig = {
-  topicPath: "example_msg",
-};
+Dashboard.panelType = "Dashboard";
+Dashboard.defaultConfig = defaultConfig;
 
 export default Panel(Dashboard);
