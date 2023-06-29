@@ -22,6 +22,7 @@
     );
 }
 .tadviz-progress .tadviz-progress-percentage {
+    width: 60px;
     white-space: nowrap;
     margin-left: 5px;
     font-size: calc(var(--base-fontsize) + 3px);

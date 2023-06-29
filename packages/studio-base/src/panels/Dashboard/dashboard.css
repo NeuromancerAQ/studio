@@ -103,7 +103,7 @@
 }
 
 .tadviz-car-info-left .tadviz-row .tadviz-label {
-    flex-basis: 5em;
+    flex-basis: 6em;
     flex-shrink: 0;
 }
 
@@ -114,7 +114,7 @@
 }
 
 .tadviz-driving-info-right .tadviz-row .tadviz-label {
-    width: 5em;
+    width: 6em;
 }
 
 .tadviz-driving-info-right > div {
@@ -334,9 +334,6 @@
     transform: translateX(-50%);
 }
 
-.tadviz-box-locked-active {
-    color: #4695ff;
-}
 
 .tadviz-angle-info {
     flex: 1;
