@@ -261,7 +261,7 @@ function Dashboard({ config, saveConfig }: Props): JSX.Element {
   useEffect(()=> {
     if (firstCachedMessage) {
       const metaMessage = cloneDeep(firstCachedMessage)
-      console.log(firstCachedMessage, 'firstCachedMessage');
+      // console.log(firstCachedMessage, 'firstCachedMessage');
       metaMessage.speed = round(Number(firstCachedMessage.speed), 2)
       metaMessage.accel = round(Number(firstCachedMessage.accel), 2)
 
@@ -279,7 +279,7 @@ function Dashboard({ config, saveConfig }: Props): JSX.Element {
       metaMessage.drive_info.yaw_rate = round(Number(firstCachedMessage.drive_info.yaw_rate), 4)
     }
 
-      console.log(metaMessage, 'metaMessage');
+      // console.log(metaMessage, 'metaMessage');
       setVehicleInfo(metaMessage);
     }
 

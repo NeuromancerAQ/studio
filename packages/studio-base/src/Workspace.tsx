@@ -41,7 +41,9 @@ import MultiProvider from "@foxglove/studio-base/components/MultiProvider";
 import { PanelCatalog } from "@foxglove/studio-base/components/PanelCatalog";
 import PanelLayout from "@foxglove/studio-base/components/PanelLayout";
 import PanelSettings from "@foxglove/studio-base/components/PanelSettings";
-import PlaybackControls from "@foxglove/studio-base/components/PlaybackControls";
+// foxglove进度条
+// import PlaybackControls from "@foxglove/studio-base/components/PlaybackControls";
+import PlaybackControls from "@foxglove/studio-base/components/UtoPlaybackControls";
 import { ProblemsList } from "@foxglove/studio-base/components/ProblemsList";
 import RemountOnValueChange from "@foxglove/studio-base/components/RemountOnValueChange";
 import { SidebarContent } from "@foxglove/studio-base/components/SidebarContent";
@@ -649,6 +651,7 @@ function WorkspaceContent(props: WorkspaceContentProps): JSX.Element {
             </Stack>
           </RemountOnValueChange>
         </Sidebars>
+        {/*foxglove进度条*/}
         {play && pause && seek && (
           <div style={{ flexShrink: 0 }}>
             <PlaybackControls
