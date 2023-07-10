@@ -52,6 +52,7 @@ import {
 import { JsonMessageWriter } from "./JsonMessageWriter";
 import { MessageWriter } from "./MessageWriter";
 import WorkerSocketAdapter from "./WorkerSocketAdapter";
+import { IteratorResult } from "@foxglove/studio-base/players/IterablePlayer/IIterableSource";
 
 const log = Log.getLogger(__dirname);
 const textEncoder = new TextEncoder();
@@ -170,6 +171,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
       sourceId: this.#sourceId,
       parameters: { url: this.#url },
     };
+    // this.#queueEmitState = debouncePromise(this.#emitStateImpl.bind(this));
     this.#open();
   }
 
@@ -524,6 +526,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
         this.#receivedBytes += data.byteLength;
         const receiveTime = this.#getCurrentTime();
         const topic = chanInfo.channel.topic;
+        console.log(chanInfo.parsedChannel.deserialize(data), 'dddd');
         this.#parsedMessages.push({
           topic,
           receiveTime,
@@ -798,7 +801,12 @@ export default class FoxgloveWebSocketPlayer implements Player {
   }
 
   public startPlayback(): void {
-    this.#startPlayImpl();
+    this.#isPlaying = true;
+    this.publish({
+      topic: '/utosim/ui',
+      msg: { "key": "play", "value": "true" }
+    })
+    this.#emitState();
   }
 
   public playUntil(time: Time): void {
@@ -818,45 +826,28 @@ export default class FoxgloveWebSocketPlayer implements Player {
     }
     this.#metricsCollector.play(this.#speed);
     this.#isPlaying = true;
-
-    // If we are idling we can start playing, if we have a next state queued we let that state
-    // finish and it will see that we should be playing
-    // if (this.#state === "idle" && (!this.#nextState || this.#nextState === "idle")) {
-    //   this.#setState("play");
-    // }
   }
 
   public pausePlayback(): void {
     if (!this.#isPlaying) {
       return;
     }
-    this.#metricsCollector.pause();
-    // clear out last tick millis so we don't read a huge chunk when we unpause
-    // this.#lastTickMillis = undefined;
     this.#isPlaying = false;
     this.#untilTime = undefined;
-    // if (this.#state === "play") {
-    //   this.#setState("idle");
-    // }
+    this.publish({
+      topic: '/utosim/ui',
+      msg: { "key": "play", "value": "false" }
+    })
+    this.#emitState();
   }
 
   public setPlaybackSpeed(speed: number): void {
-    // this.#lastRangeMillis = undefined;
     this.#speed = speed;
     this.#metricsCollector.setSpeed(speed);
-
-    // Queue event state update to update speed in player state to UI
-    // this.#queueEmitState();
   }
 
   public seekPlayback(time: Time): void {
-    // Wait to perform seek until initialization is complete
-    // if (this.#state === "preinit" || this.#state === "initialize") {
-    //   log.debug(`Ignoring seek, state=${this.#state}`);
-    //   this.#seekTarget = time;
-    //   return;
-    // }
-
+    console.log(time);
     if (!this.#startTime || !this.#endTime) {
       throw new Error("invariant: initialized but no start/end set");
     }
@@ -864,23 +855,17 @@ export default class FoxgloveWebSocketPlayer implements Player {
     // Limit seek to within the valid range
     const targetTime = clampTime(time, this.#startTime, this.#endTime);
 
-    // We are already seeking to this time, no need to reset seeking
-    if (this.#seekTarget && compare(this.#seekTarget, targetTime) === 0) {
-      log.debug(`Ignoring seek, already seeking to this time`);
-      return;
-    }
-
-    // We are already at this time, no need to reset seeking
-    if (this.#currentTime && compare(this.#currentTime, targetTime) === 0) {
-      log.debug(`Ignoring seek, already at this time`);
-      return;
-    }
-
+    this.#currentTime = time;
     this.#metricsCollector.seek(targetTime);
     this.#seekTarget = targetTime;
     this.#untilTime = undefined;
 
-    // this.#setState("seek-backfill");
+    const {sec, nsec} = targetTime
+    this.publish({
+      topic: '/utosim/ui',
+      msg: { "key": "jump", "value": String(sec) + String(nsec) }
+    });
+    this.#emitState();
   }
 
   public close(): void {

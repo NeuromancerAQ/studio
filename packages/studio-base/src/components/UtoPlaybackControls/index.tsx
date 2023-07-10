@@ -105,15 +105,6 @@ export default function PlaybackControls(props: {
   const { currentUser } = useCurrentUser();
   const eventsSupported = useEvents(selectEventsSupported);
 
-  const {  datatypes } = useDataSourceInfo();
-
-  const publish = usePublisher({
-    name: "Publish",
-    topic: '/utosim/ui',
-    schemaName: 'foxglove.KeyValuePair',
-    datatypes
-  });
-
   const {
     playbackControlActions: { setRepeat },
   } = useWorkspaceActions();
@@ -125,10 +116,6 @@ export default function PlaybackControls(props: {
   const togglePlayPause = useCallback(() => {
     if (isPlaying) {
       pause();
-      publish({
-        "key": "play",
-        "value": "false"
-      })
     } else {
       const { startTime: start, endTime: end, currentTime: current } = getTimeInfo();
       // if we are at the end, we need to go back to start
@@ -136,11 +123,6 @@ export default function PlaybackControls(props: {
         seek(start);
       }
       play();
-      publish({
-        "key": "play",
-        "value": "true"
-      })
-
     }
   }, [isPlaying, pause, getTimeInfo, play, seek]);
 
@@ -197,10 +179,6 @@ export default function PlaybackControls(props: {
 
   const toggleCreateEventDialog = useCallback(() => {
     pause();
-    publish({
-      "key": "play",
-      "value": "false"
-    })
     setCreateEventDialogOpen((open) => !open);
   }, [pause]);
 

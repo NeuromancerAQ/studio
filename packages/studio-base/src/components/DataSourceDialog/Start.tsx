@@ -484,7 +484,9 @@ export default function Start(): JSX.Element {
   return (
     <Stack className={classes.grid}>
       <header className={classes.header}>
-        <FoxgloveLogoText color="primary" className={classes.logo} />
+        {/*<FoxgloveLogoText color="primary" className={classes.logo} />*/}
+
+        <img color="primary" src={require("@foxglove/studio-base/assets/images/logo/logo_blue.png?url")} className={classes.logo} />
       </header>
       <Stack className={classes.content}>
         <Stack gap={4}>

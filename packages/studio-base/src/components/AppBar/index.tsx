@@ -273,7 +273,12 @@ export function AppBar(props: AppBarProps): JSX.Element {
                   setAppMenuEl(event.currentTarget);
                 }}
               >
-                <FoxgloveLogo fontSize="inherit" color="inherit" />
+                {/*<FoxgloveLogo fontSize="inherit" color="inherit" />*/}
+                <img color="primary" src={require("@foxglove/studio-base/assets/images/logo/somersault.png?url")} style={{
+                  width: '24px',
+                  height: '24px',
+                  marginRight: '5px'
+                }} />
                 <ChevronDown12Regular
                   className={classes.dropDownIcon}
                   primaryFill={theme.palette.common.white}

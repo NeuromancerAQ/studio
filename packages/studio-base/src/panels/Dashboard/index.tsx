@@ -458,11 +458,11 @@ function Dashboard({ config, saveConfig }: Props): JSX.Element {
           }}>
             <div className={"tadviz-car-light-info tadviz-row tadviz-between tadviz-align-item-center"}>
               <div className={"tadviz-front-distance tadviz-row tadviz-align-item-center"}>
-                <span style={{width: '5em'}}>箱锁</span>
+                <span style={{width: '30px'}}>箱锁</span>
                 {
-                  !vehicleInfo.drive_info.box_locked_on ? <img
+                  !vehicleInfo.drive_info.box_locked_on ? <img style={{width: '24px',height: '24px'}}
                     src={require("@foxglove/studio-base/assets/images/VehicleDrivingInformation/boxLockedOn.svg?url")}
-                  />   : <img
+                  />   : <img style={{width: '24px',height: '24px'}}
                     src={require("@foxglove/studio-base/assets/images/VehicleDrivingInformation/boxLockedOnActive.svg?url")}
                   />
                 }
