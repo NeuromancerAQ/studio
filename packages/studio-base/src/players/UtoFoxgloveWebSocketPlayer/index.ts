@@ -13,8 +13,9 @@ import { MessageDefinition } from "@foxglove/message-definition";
 import CommonRosTypes from "@foxglove/rosmsg-msgs-common";
 import { MessageWriter as Ros1MessageWriter } from "@foxglove/rosmsg-serialization";
 import { MessageWriter as Ros2MessageWriter } from "@foxglove/rosmsg2-serialization";
-import { clampTime, compare, fromMillis, fromNanoSec, isGreaterThan, isLessThan, Time, fromString } from "@foxglove/rostime";
+import { clampTime, compare, fromMillis, fromNanoSec, isGreaterThan, isLessThan, Time, toString } from "@foxglove/rostime";
 import { ParameterValue } from "@foxglove/studio";
+import NoopMetricsCollector from "@foxglove/studio-base/players/NoopMetricsCollector";
 import PlayerProblemManager from "@foxglove/studio-base/players/PlayerProblemManager";
 import {
   AdvertiseOptions,
@@ -167,7 +168,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
     metricsCollector: PlayerMetricsCollectorInterface;
     sourceId: string;
   }) {
-    this.#metricsCollector = metricsCollector;
+    this.#metricsCollector = metricsCollector ?? new NoopMetricsCollector();
     this.#url = url;
     this.#name = url;
     this.#metricsCollector.playerConstructed();
@@ -248,9 +249,9 @@ export default class FoxgloveWebSocketPlayer implements Player {
             this.#url
           } is reachable and supports protocol version ${FoxgloveClient.SUPPORTED_SUBPROTOCOL}.`,
         });
-        this.#presence = PlayerPresence.INITIALIZING;
-        this.#emitState();
       }
+      this.#presence = PlayerPresence.INITIALIZING;
+      this.#emitState();
     });
 
     // Note: We've observed closed being called not only when an already open connection is closed
@@ -582,7 +583,6 @@ export default class FoxgloveWebSocketPlayer implements Player {
       }
 
       this.#clockTime = time;
-      console.log(this.#clockTime, 'cccc');
       this.#emitState();
     });
 
@@ -821,12 +821,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
   }
 
   public startPlayback(): void {
-    this.#isPlaying = true;
-    this.publish({
-      topic: '/utosim/ui',
-      msg: { "key": "play", "value": "true" }
-    })
-    this.#emitState();
+    this.#startPlayImpl();
   }
 
   public playUntil(time: Time): void {
@@ -846,12 +841,18 @@ export default class FoxgloveWebSocketPlayer implements Player {
     }
     this.#metricsCollector.play(this.#speed);
     this.#isPlaying = true;
+    this.publish({
+      topic: '/utosim/ui',
+      msg: { "key": "play", "value": "true" }
+    })
+    this.#emitState();
   }
 
   public pausePlayback(): void {
     if (!this.#isPlaying) {
       return;
     }
+    this.#metricsCollector.pause();
     this.#isPlaying = false;
     this.#untilTime = undefined;
     this.publish({
@@ -864,10 +865,11 @@ export default class FoxgloveWebSocketPlayer implements Player {
   public setPlaybackSpeed(speed: number): void {
     this.#speed = speed;
     this.#metricsCollector.setSpeed(speed);
+    this.#emitState();
   }
 
   public seekPlayback(time: Time): void {
-    if (this.#presence === PlayerPresence.INITIALIZING) {
+    if (this.#presence !== PlayerPresence.PRESENT) {
       log.debug(`Ignoring seek, presence=${this.#presence}`);
       this.#seekTarget = time;
       return;
@@ -877,6 +879,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
       throw new Error("invariant: initialized but no start/end set");
     }
 
+    // console.log(time, 'ottttt');
     // Limit seek to within the valid range
     const targetTime = clampTime(time, this.#startTime, this.#endTime);
 
@@ -899,7 +902,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
     const {sec, nsec} = targetTime
     this.publish({
       topic: '/utosim/ui',
-      msg: { "key": "jump", "value": String(sec) + String(nsec) }
+      msg: { "key": "jump", "value": `${sec}${nsec.toFixed().padStart(9, "0")}`}
     });
     this.#currentTime = targetTime;
     this.#emitState();

@@ -29,6 +29,7 @@ import variableSliderThumbnail from "./VariableSlider/thumbnail.png";
 import diagnosticStatusThumbnail from "./diagnostics/thumbnails/diagnostic-status.png";
 import diagnosticSummaryThumbnail from "./diagnostics/thumbnails/diagnostic-summary.png";
 import baseInfoThumbnail from "./BaseInfo/thumbnail.png";
+import stPoligonGraphThumbnail from "./StPoligonGraph/thumbnail.png";
 
 export const getBuiltin: (t: TFunction<"panels">) => PanelInfo[] = (t) => [
   {
@@ -197,6 +198,13 @@ export const getBuiltin: (t: TFunction<"panels">) => PanelInfo[] = (t) => [
     description: t("dashboardDescription"),
     thumbnail: baseInfoThumbnail,
     module: async () => await import("./BaseInfo"),
+  },
+  {
+    title: "ST曲线",
+    type: "StPoligonGraph",
+    description: t("dashboardDescription"),
+    thumbnail: stPoligonGraphThumbnail,
+    module: async () => await import("./StPoligonGraph"),
   },
 ];
 

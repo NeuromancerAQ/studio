@@ -1,0 +1,67 @@
+#stCanvas {
+    width: 500px;
+    height: 500px;
+}
+
+.st-poligon-graph-content {
+    padding: 8px 16px;
+    position: relative;
+}
+.lenged{
+    position: absolute;
+    top:20px;
+    right:16px;
+    width: calc(100% - 32px);
+    display: flex;
+    height: 32px;
+    line-height: 32px;
+    font-size: 12px;
+
+}
+.lenged-item{
+    flex:1;
+    position: relative;
+    text-align: left;
+    padding-left: 15px;
+}
+.lenged-item::after{
+    content: "";
+    position: absolute;
+    left:0px;
+    top:50%;
+    width: 10px;
+    height: 10px;
+    border-radius: 20px;
+
+    margin-top: -5px;
+}
+.lenged-item:nth-child(1){
+    color: #ffffff;
+}
+.lenged-item:nth-child(2){
+    color: #1B9F1CFF;
+}
+.lenged-item:nth-child(3){
+    color: #3F71DAFF;
+}
+.lenged-item:nth-child(4){
+    color: #DA523FFF;
+}
+.lenged-item:nth-child(5){
+    color: #3FCDDAFF;
+}
+.lenged-item:nth-child(1):after{
+    background-color: #ffffff;
+}
+.lenged-item:nth-child(2):after{
+    background-color: #1B9F1CFF;
+}
+.lenged-item:nth-child(3):after{
+    background-color: #3F71DAFF;
+}
+.lenged-item:nth-child(4):after{
+    background-color: #DA523FFF;
+}
+.lenged-item:nth-child(5):after {
+    background-color: #3FCDDAFF;
+}
