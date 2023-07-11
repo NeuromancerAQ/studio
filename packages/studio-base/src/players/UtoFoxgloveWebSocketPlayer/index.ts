@@ -13,7 +13,7 @@ import { MessageDefinition } from "@foxglove/message-definition";
 import CommonRosTypes from "@foxglove/rosmsg-msgs-common";
 import { MessageWriter as Ros1MessageWriter } from "@foxglove/rosmsg-serialization";
 import { MessageWriter as Ros2MessageWriter } from "@foxglove/rosmsg2-serialization";
-import { clampTime, compare, fromMillis, fromNanoSec, isGreaterThan, isLessThan, Time } from "@foxglove/rostime";
+import { clampTime, compare, fromMillis, fromNanoSec, isGreaterThan, isLessThan, Time, fromString } from "@foxglove/rostime";
 import { ParameterValue } from "@foxglove/studio";
 import PlayerProblemManager from "@foxglove/studio-base/players/PlayerProblemManager";
 import {
@@ -53,6 +53,7 @@ import { JsonMessageWriter } from "./JsonMessageWriter";
 import { MessageWriter } from "./MessageWriter";
 import WorkerSocketAdapter from "./WorkerSocketAdapter";
 import { IteratorResult } from "@foxglove/studio-base/players/IterablePlayer/IIterableSource";
+import { round } from "lodash";
 
 const log = Log.getLogger(__dirname);
 const textEncoder = new TextEncoder();
@@ -128,6 +129,10 @@ export default class FoxgloveWebSocketPlayer implements Player {
   #currentTime?: Time;
   #speed: number = 1.0;
   #seekTarget?: Time;
+  #A2M: string;
+  #M2A: string;
+  #truckType: string = 'gt';
+  #sessionId: string;
 
   #unresolvedSubscriptions = new Set<string>();
   #resolvedSubscriptionsByTopic = new Map<string, SubscriptionId>();
@@ -205,7 +210,9 @@ export default class FoxgloveWebSocketPlayer implements Player {
       if (this.#connectionAttemptTimeout != undefined) {
         clearTimeout(this.#connectionAttemptTimeout);
       }
-      this.#presence = PlayerPresence.PRESENT;
+
+      // this.#currentTime = {nsec: 0, sec: 0};
+      // this.#presence = PlayerPresence.PRESENT;
       this.#resetSessionState();
       this.#problems.clear();
       this.#channelsById.clear();
@@ -225,6 +232,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
       }
       this.#resolvedSubscriptionsById.clear();
       this.#resolvedSubscriptionsByTopic.clear();
+
     });
 
     this.#client.on("error", (err) => {
@@ -291,12 +299,22 @@ export default class FoxgloveWebSocketPlayer implements Player {
         this.#resetSessionState();
       }
 
+      console.log(event, 'event');
+
       this.#id = newSessionId;
       this.#name = `${this.#url}\n${event.name}`;
       this.#serverCapabilities = Array.isArray(event.capabilities) ? event.capabilities : [];
       this.#serverPublishesTime = this.#serverCapabilities.includes(ServerCapability.time);
       this.#supportedEncodings = event.supportedEncodings;
       this.#datatypes = new Map();
+      this.#A2M = event.metadata?.A2M;
+      this.#M2A = event.metadata?.M2A;
+      this.#truckType = event.metadata?.TruckType;
+      this.#sessionId = event.sessionId;
+
+      this.#startTime = formatFoxgloveTime(event.metadata?.StartTime);
+      this.#endTime = formatFoxgloveTime(event.metadata?.EndTime);
+      // this.#currentTime = this.#startTime;
 
       // If the server publishes the time we clear any existing clockTime we might have and let the
       // server override
@@ -472,6 +490,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
         this.#channelsByTopic.set(channel.topic, resolvedChannel);
       }
       this.#updateTopicsAndDatatypes();
+      this.setPublishers([{ topic:'/utosim/ui', schemaName: 'foxglove.KeyValuePair', options: { datatypes: this.#datatypes}}]);
       this.#emitState();
       this.#processUnresolvedSubscriptions();
     });
@@ -526,7 +545,6 @@ export default class FoxgloveWebSocketPlayer implements Player {
         this.#receivedBytes += data.byteLength;
         const receiveTime = this.#getCurrentTime();
         const topic = chanInfo.channel.topic;
-        console.log(chanInfo.parsedChannel.deserialize(data), 'dddd');
         this.#parsedMessages.push({
           topic,
           receiveTime,
@@ -564,6 +582,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
       }
 
       this.#clockTime = time;
+      console.log(this.#clockTime, 'cccc');
       this.#emitState();
     });
 
@@ -754,13 +773,14 @@ export default class FoxgloveWebSocketPlayer implements Player {
       });
     }
 
-    const currentTime = this.#getCurrentTime();
-    if (!this.#startTime || isLessThan(currentTime, this.#startTime)) {
-      this.#startTime = currentTime;
-    }
-    if (!this.#endTime || isGreaterThan(currentTime, this.#endTime)) {
-      this.#endTime = currentTime;
-    }
+    this.#currentTime = this.#getCurrentTime();
+
+    // if (!this.#startTime || isLessThan(this.#currentTime, this.#startTime)) {
+    //   this.#startTime = this.#currentTime;
+    // }
+    // if (!this.#endTime || isGreaterThan(this.#currentTime, this.#endTime)) {
+    //   this.#endTime = this.#currentTime;
+    // }
 
     const messages = this.#parsedMessages;
     this.#parsedMessages = [];
@@ -779,7 +799,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
         totalBytesReceived: this.#receivedBytes,
         startTime: this.#startTime,
         endTime: this.#endTime,
-        currentTime,
+        currentTime: this.#currentTime,
         isPlaying: this.#isPlaying,
         speed: this.#speed,
         lastSeekTime: this.#numTimeSeeks,
@@ -847,7 +867,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
   }
 
   public seekPlayback(time: Time): void {
-    console.log(time);
+    // this.#currentTime = time;
     if (!this.#startTime || !this.#endTime) {
       throw new Error("invariant: initialized but no start/end set");
     }
@@ -855,7 +875,18 @@ export default class FoxgloveWebSocketPlayer implements Player {
     // Limit seek to within the valid range
     const targetTime = clampTime(time, this.#startTime, this.#endTime);
 
-    this.#currentTime = time;
+    // We are already seeking to this time, no need to reset seeking
+    if (this.#seekTarget && compare(this.#seekTarget, targetTime) === 0) {
+      log.debug(`Ignoring seek, already seeking to this time`);
+      return;
+    }
+
+    // We are already at this time, no need to reset seeking
+    if (this.#currentTime && compare(this.#currentTime, targetTime) === 0) {
+      log.debug(`Ignoring seek, already at this time`);
+      return;
+    }
+
     this.#metricsCollector.seek(targetTime);
     this.#seekTarget = targetTime;
     this.#untilTime = undefined;
@@ -980,6 +1011,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
     if (removedPublications.length > 0 || newPublications.length > 0) {
       this.#emitState();
     }
+    this.#presence = PlayerPresence.PRESENT;
   }
 
   public setParameter(key: string, value: ParameterValue): void {
@@ -1249,5 +1281,14 @@ function statusLevelToProblemSeverity(level: StatusLevel): PlayerProblem["severi
     return "warn";
   } else {
     return "error";
+  }
+}
+
+function formatFoxgloveTime(value: string): Time {
+  const sec = Math.trunc(value / 1e9);
+  const nsec = value % 1e9;
+  return {
+    sec: sec,
+    nsec: nsec
   }
 }
