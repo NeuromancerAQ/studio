@@ -211,7 +211,6 @@ export default class FoxgloveWebSocketPlayer implements Player {
         clearTimeout(this.#connectionAttemptTimeout);
       }
 
-      // this.#currentTime = {nsec: 0, sec: 0};
       // this.#presence = PlayerPresence.PRESENT;
       this.#resetSessionState();
       this.#problems.clear();
@@ -249,6 +248,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
             this.#url
           } is reachable and supports protocol version ${FoxgloveClient.SUPPORTED_SUBPROTOCOL}.`,
         });
+        this.#presence = PlayerPresence.INITIALIZING;
         this.#emitState();
       }
     });
@@ -867,7 +867,12 @@ export default class FoxgloveWebSocketPlayer implements Player {
   }
 
   public seekPlayback(time: Time): void {
-    // this.#currentTime = time;
+    if (this.#presence === PlayerPresence.INITIALIZING) {
+      log.debug(`Ignoring seek, presence=${this.#presence}`);
+      this.#seekTarget = time;
+      return;
+    }
+
     if (!this.#startTime || !this.#endTime) {
       throw new Error("invariant: initialized but no start/end set");
     }
@@ -896,6 +901,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
       topic: '/utosim/ui',
       msg: { "key": "jump", "value": String(sec) + String(nsec) }
     });
+    this.#currentTime = targetTime;
     this.#emitState();
   }
 
