@@ -387,6 +387,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
         this.#client?.subscribeConnectionGraph();
       }
 
+      this.setPublishers([{ topic:'/utosim/ui', schemaName: 'foxglove.KeyValuePair', options: { datatypes: this.#datatypes}}]);
       this.#emitState();
     });
 
@@ -572,10 +573,11 @@ export default class FoxgloveWebSocketPlayer implements Player {
     });
 
     this.#client.on("time", ({ timestamp }) => {
+
       if (!this.#serverPublishesTime) {
         return;
       }
-
+      // console.log(timestamp, 'timestamp');
       const time = fromNanoSec(timestamp);
       if (this.#clockTime != undefined && isLessThan(time, this.#clockTime)) {
         this.#numTimeSeeks++;
@@ -621,7 +623,6 @@ export default class FoxgloveWebSocketPlayer implements Player {
       if (!this.#serviceCallEncoding) {
         return;
       }
-
       let schemaEncoding: string;
       if (this.#serviceCallEncoding === "json") {
         schemaEncoding = "jsonschema";
@@ -869,6 +870,11 @@ export default class FoxgloveWebSocketPlayer implements Player {
   }
 
   public seekPlayback(time: Time): void {
+    if (!this.#client || this.#closed) {
+      log.debug(`Ignoring seek, no client`);
+      return;
+    }
+
     if (this.#presence !== PlayerPresence.PRESENT) {
       log.debug(`Ignoring seek, presence=${this.#presence}`);
       this.#seekTarget = time;

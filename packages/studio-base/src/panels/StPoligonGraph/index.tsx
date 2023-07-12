@@ -18,6 +18,10 @@ import PanelToolbar from "@foxglove/studio-base/components/PanelToolbar";
 import Stack from "@foxglove/studio-base/components/Stack";
 import { Topic } from "@foxglove/studio-base/src/players/types";
 import "./stPoligonGraph.css"
+import { useMessagesByTopic } from "@foxglove/studio-base/PanelAPI";
+import { useCachedGetMessagePathDataItems } from "@foxglove/studio-base/components/MessagePathSyntax/useCachedGetMessagePathDataItems";
+import { RosPath } from "@foxglove/studio-base/components/MessagePathSyntax/constants";
+import parseRosPath from "@foxglove/studio-base/components/MessagePathSyntax/parseRosPath";
 
 const useStyles = makeStyles<void, "copyIcon">()((theme, _params, classes) => ({
   overline: {
@@ -29,19 +33,31 @@ let idPos = []
 
 function StPoligonGraph(): JSX.Element {
   const { classes } = useStyles();
+  const topicPath = '/planning/planning_visualization/st_graph';
+
+  const topicRosPath: RosPath | undefined = React.useMemo(
+    () => parseRosPath(topicPath),
+    [topicPath],
+  );
+  const topicName = topicRosPath?.topicName ?? "";
+  const msgs = useMessagesByTopic({ topics: [topicName], historySize: 1 })[topicName];
+  const cachedGetMessagePathDataItems = useCachedGetMessagePathDataItems([topicPath]);
+  const msg = msgs?.[0];
+  const cachedMessages = msg ? cachedGetMessagePathDataItems(topicPath, msg) ?? [] : [];
+  const firstCachedMessage = cachedMessages[0]?.value;
+
   const canvasRef = useRef(null)
 
+  const chartWidth = 600;
   const chartHeight = 400;
-  const chartWidth = 480;
-
 
 
   const color = ['#1B9F1CFF','#3F71DAFF','#DA523FFF','#3FCDDAFF'];
-  const padding = {x:55,y:80};
+  const padding = {x:55,y:70};
 //画布的款高
   let cw = chartWidth;
   let ch = chartHeight;
-  const max = {x:9,y:200};
+  const max = {x:9, y:200};
   //计算刻度可使用的总宽度
   let avgWidth = (cw - 2*padding.x - 50)/(max.x-1);
 //原点，bottomRight:X轴终点,topLeft:Y轴终点
@@ -124,6 +140,7 @@ function StPoligonGraph(): JSX.Element {
 
   }
   function drawSpeedLine(arr, context){
+    console.log(arr,context, 'arr');
     if(!arr || arr.length < 0 ){
       return;
     }
@@ -198,22 +215,17 @@ function StPoligonGraph(): JSX.Element {
     context.stroke();
   }
 
-  const drawGraph = (context, payload) => {
-    const { motion_planning_info } = payload || {};
-    // console.log(payload);
-    let { longi_planning_info } = motion_planning_info || {};
-    if(!longi_planning_info) longi_planning_info = {};
-    let { st_graph } = longi_planning_info || {};
-    if(!st_graph) st_graph = {};
-    let { objects } = st_graph || [];
-    let { st_profile } = st_graph || [];
+  const drawGraph = (payload, context) => {
+    console.log(payload, 'pppp');
+
+    let { objects } = payload;
+    let { st_profile } = payload;
     if(!objects) objects = [];
     if(!st_profile) st_profile = [];
 
     context.clearRect(0, 0, cw, ch);
     drawAxis(context);
     idPos = [];
-    // console.log(objects)
     objects.forEach((_st_profile)=>{
       drawObstacleObejtLine(_st_profile, context);
     })
@@ -221,11 +233,14 @@ function StPoligonGraph(): JSX.Element {
   }
 
   useEffect(()=> {
-    const canvas = canvasRef.current
-    const context = canvas.getContext('2d')
-
-    drawGraph(context, {})
-  }, [])
+    if (firstCachedMessage) {
+      const canvas = canvasRef.current
+      canvas.width = cw
+      canvas.height = ch
+      const context = canvas.getContext('2d')
+      drawGraph(firstCachedMessage, context)
+    }
+  }, [firstCachedMessage])
 
   return (
     <>
