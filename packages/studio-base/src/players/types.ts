@@ -145,11 +145,11 @@ export type PlayerStateActiveData = {
 
   // The start time to show in the playback bar. Every `message.receiveTime` (and therefore
   // `currentTime`) has to later than or equal to `startTime`.
-  startTime: Time;
+  startTime: Time | undefined;
 
   // The end time to show in the playback bar. Every `message.receiveTime` (and therefore
   // `currentTime`) has to before than or equal to `endTime`.
-  endTime: Time;
+  endTime: Time | undefined;
 
   // Whether or not we're currently playing back. Controls the play/pause icon in the playback bar.
   // It's still allowed to emit `messages` even when not playing (e.g. when doing a backfill after

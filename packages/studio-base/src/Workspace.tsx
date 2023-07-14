@@ -34,9 +34,9 @@ import {
 import MultiProvider from "@foxglove/studio-base/components/MultiProvider";
 import PanelLayout from "@foxglove/studio-base/components/PanelLayout";
 import PanelSettings from "@foxglove/studio-base/components/PanelSettings";
-// foxglove进度条
-// import PlaybackControls from "@foxglove/studio-base/components/PlaybackControls";
-import PlaybackControls from "@foxglove/studio-base/components/UtoPlaybackControls";
+// 进度条
+import PlaybackControls from "@foxglove/studio-base/components/PlaybackControls";
+
 import { ProblemsList } from "@foxglove/studio-base/components/ProblemsList";
 import RemountOnValueChange from "@foxglove/studio-base/components/RemountOnValueChange";
 import { Sidebars, SidebarItem } from "@foxglove/studio-base/components/Sidebars";

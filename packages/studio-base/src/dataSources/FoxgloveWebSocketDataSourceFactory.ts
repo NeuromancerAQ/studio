@@ -13,7 +13,8 @@ import { Player } from "@foxglove/studio-base/players/types";
 export default class FoxgloveWebSocketDataSourceFactory implements IDataSourceFactory {
   public id = "foxglove-websocket";
   public type: IDataSourceFactory["type"] = "connection";
-  public displayName = "Foxglove WebSocket";
+  // public displayName = "Foxglove WebSocket";
+  public displayName = "UtoViz WebSocket";
   public iconName: IDataSourceFactory["iconName"] = "Flow";
   public description =
     "Connect to a ROS 1, ROS 2, or custom system using the Foxglove WebSocket protocol. For ROS systems, be sure to first install the foxglove_bridge ROS package.";

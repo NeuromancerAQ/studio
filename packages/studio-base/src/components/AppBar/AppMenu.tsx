@@ -259,14 +259,14 @@ export function AppMenu(props: AppMenuProps): JSX.Element {
         >
           {t("view")}
         </NestedMenuItem>
-        <NestedMenuItem
-          onPointerEnter={handleItemPointerEnter}
-          items={helpItems}
-          open={nestedMenu === "app-menu-help"}
-          id="app-menu-help"
-        >
-          {t("help")}
-        </NestedMenuItem>
+        {/*<NestedMenuItem*/}
+        {/*  onPointerEnter={handleItemPointerEnter}*/}
+        {/*  items={helpItems}*/}
+        {/*  open={nestedMenu === "app-menu-help"}*/}
+        {/*  id="app-menu-help"*/}
+        {/*>*/}
+        {/*  {t("help")}*/}
+        {/*</NestedMenuItem>*/}
       </Menu>
     </>
   );

@@ -2,37 +2,21 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { Divider, Skeleton, Typography } from "@mui/material";
-import { makeStyles } from "tss-react/mui";
 import { useRef, useEffect  } from 'react';
 
-import CopyButton from "@foxglove/studio-base/components/CopyButton";
-import { DirectTopicStatsUpdater } from "@foxglove/studio-base/components/DirectTopicStatsUpdater";
-import EmptyState from "@foxglove/studio-base/components/EmptyState";
-import {
-  MessagePipelineContext,
-  useMessagePipeline,
-} from "@foxglove/studio-base/components/MessagePipeline";
 import Panel from "@foxglove/studio-base/components/Panel";
 import PanelToolbar from "@foxglove/studio-base/components/PanelToolbar";
 import Stack from "@foxglove/studio-base/components/Stack";
-import { Topic } from "@foxglove/studio-base/src/players/types";
-import "./stPoligonGraph.css"
+
 import { useMessagesByTopic } from "@foxglove/studio-base/PanelAPI";
 import { useCachedGetMessagePathDataItems } from "@foxglove/studio-base/components/MessagePathSyntax/useCachedGetMessagePathDataItems";
 import { RosPath } from "@foxglove/studio-base/components/MessagePathSyntax/constants";
 import parseRosPath from "@foxglove/studio-base/components/MessagePathSyntax/parseRosPath";
+import "./stPoligonGraph.css";
 
-const useStyles = makeStyles<void, "copyIcon">()((theme, _params, classes) => ({
-  overline: {
-    opacity: 0.6,
-  },
-}));
-
-let idPos = []
+let idPos: any[] = []
 
 function StPoligonGraph(): JSX.Element {
-  const { classes } = useStyles();
   const topicPath = '/planning/planning_visualization/st_graph';
 
   const topicRosPath: RosPath | undefined = React.useMemo(
@@ -46,7 +30,7 @@ function StPoligonGraph(): JSX.Element {
   const cachedMessages = msg ? cachedGetMessagePathDataItems(topicPath, msg) ?? [] : [];
   const firstCachedMessage = cachedMessages[0]?.value;
 
-  const canvasRef = useRef(null)
+  const canvasRef: any = useRef(null)
 
   const chartWidth = 600;
   const chartHeight = 400;
@@ -65,7 +49,7 @@ function StPoligonGraph(): JSX.Element {
   let bottomRight = {x:cw-padding.x,y:ch-padding.y};
   let topLeft = {x:padding.x,y:padding.y};
 
-  function drawAxis(context){
+  function drawAxis(context: any){
 
     //绘制X轴
     context.beginPath();
@@ -139,8 +123,7 @@ function StPoligonGraph(): JSX.Element {
 
 
   }
-  function drawSpeedLine(arr, context){
-    console.log(arr,context, 'arr');
+  function drawSpeedLine(arr: any[], context: any){
     if(!arr || arr.length < 0 ){
       return;
     }
@@ -154,8 +137,8 @@ function StPoligonGraph(): JSX.Element {
       }else{
         context.lineTo(posX,posY);
       }
-      //具体金额文字
-      if(i == parseInt(arr.length/2)){
+
+      if(i == parseInt(String(arr.length / 2 ))){
         let _posX = posX,_posY = posY;
         let lastPos = idPos[idPos.length-1];
         if(lastPos && Math.abs(lastPos[0]-_posX)<15){
@@ -174,7 +157,7 @@ function StPoligonGraph(): JSX.Element {
     context.stroke();
   }
 
-  function drawObstacleObejtLine(object, context){
+  function drawObstacleObejtLine(object: any, context: any){
     if(!object || !object.points || object.points.length <=0){
       return;
     }
@@ -182,7 +165,7 @@ function StPoligonGraph(): JSX.Element {
     let arr = object.points || [];
     //绘制闭合多边形
     context.beginPath();
-    let textPosIndex = parseInt(Math.random()*(arr.length-1-0+1)+0,10);
+    let textPosIndex = parseInt(String(Math.random()*(arr.length-1-0+1)+0),10);
     for(let i=0;i<arr.length;i++){
       let posY = origin.y - Math.floor(arr[i].s/max.y*(ch-2*padding.y-50));
       let posX = origin.x + (arr[i].t)*avgWidth;
@@ -215,9 +198,7 @@ function StPoligonGraph(): JSX.Element {
     context.stroke();
   }
 
-  const drawGraph = (payload, context) => {
-    console.log(payload, 'pppp');
-
+  const drawGraph = (payload: any, context: any) => {
     let { objects } = payload;
     let { st_profile } = payload;
     if(!objects) objects = [];
@@ -226,7 +207,7 @@ function StPoligonGraph(): JSX.Element {
     context.clearRect(0, 0, cw, ch);
     drawAxis(context);
     idPos = [];
-    objects.forEach((_st_profile)=>{
+    objects.forEach((_st_profile: any)=>{
       drawObstacleObejtLine(_st_profile, context);
     })
     drawSpeedLine(st_profile, context);
@@ -234,7 +215,7 @@ function StPoligonGraph(): JSX.Element {
 
   useEffect(()=> {
     if (firstCachedMessage) {
-      const canvas = canvasRef.current
+      const canvas:any = canvasRef.current
       canvas.width = cw
       canvas.height = ch
       const context = canvas.getContext('2d')

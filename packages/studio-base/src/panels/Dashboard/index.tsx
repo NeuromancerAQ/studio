@@ -2,171 +2,48 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { last, round, cloneDeep } from "lodash";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useState } from "react";
-import { v4 as uuidv4 } from "uuid";
+import {  round, cloneDeep } from "lodash";
+import {  useEffect, useState } from "react";
 
-import {
-  MessagePipelineContext,
-  useMessagePipeline,
-} from "@foxglove/studio-base/components/MessagePipeline";
-
-import { MessageEvent, PanelExtensionContext, SettingsTreeAction } from "@foxglove/studio";
 import { RosPath } from "@foxglove/studio-base/components/MessagePathSyntax/constants";
 import parseRosPath from "@foxglove/studio-base/components/MessagePathSyntax/parseRosPath";
-import { simpleGetMessagePathDataItems } from "@foxglove/studio-base/components/MessagePathSyntax/simpleGetMessagePathDataItems";
-import { turboColorString } from "@foxglove/studio-base/util/colorUtils";
+
 import { BaseProgress } from "./BaseProgress";
 
-import { settingsActionReducer, useSettingsTree } from "./settings";
-import type { Config } from "./types";
 import Stack from "@foxglove/studio-base/components/Stack";
 import "./dashboard.css";
-import { Topic } from "@foxglove/studio-base/players/types";
-// import { useDataSourceInfo } from "@foxglove/studio-base/PanelAPI";
-import { useMessageDataItem } from "@foxglove/studio-base/components/MessagePathSyntax/useMessageDataItem";
+
 import { useMessagesByTopic } from "@foxglove/studio-base/PanelAPI";
 import { useCachedGetMessagePathDataItems } from "@foxglove/studio-base/components/MessagePathSyntax/useCachedGetMessagePathDataItems";
 import Panel from "@foxglove/studio-base/components/Panel";
 import PanelToolbar from "@foxglove/studio-base/components/PanelToolbar";
 
-type Props = {
-  context: PanelExtensionContext;
-};
-
-const defaultConfig: Config = {
-  topicPath: "/utosim/dashboard",
-};
-
-type State = {
-  path: string;
-  parsedPath: RosPath | undefined;
-  latestMessage: MessageEvent | undefined;
-  latestMatchingQueriedData: unknown | undefined;
-  error: Error | undefined;
-  pathParseError: string | undefined;
-};
-
-type Action =
-  | { type: "frame"; messages: readonly MessageEvent[] }
-  | { type: "path"; path: string }
-  | { type: "seek" };
-
-function getSingleDataItem(results: unknown[]) {
-  if (results.length <= 1) {
-    return results[0];
-  }
-  throw new Error("Message path produced multiple results");
-}
-
-function reducer(state: State, action: Action): State {
-  try {
-    switch (action.type) {
-      case "frame": {
-        if (state.pathParseError != undefined) {
-          return { ...state, latestMessage: last(action.messages), error: undefined };
-        }
-        let latestMatchingQueriedData = state.latestMatchingQueriedData;
-        let latestMessage = state.latestMessage;
-        if (state.parsedPath) {
-          for (const message of action.messages) {
-            if (message.topic !== state.parsedPath.topicName) {
-              continue;
-            }
-            const data = getSingleDataItem(
-              simpleGetMessagePathDataItems(message, state.parsedPath),
-            );
-            if (data != undefined) {
-              latestMatchingQueriedData = data;
-              latestMessage = message;
-            }
-          }
-        }
-        return { ...state, latestMessage, latestMatchingQueriedData, error: undefined };
-      }
-      case "path": {
-        const newPath = parseRosPath(action.path);
-        let pathParseError: string | undefined;
-        if (
-          newPath?.messagePath.some(
-            (part) =>
-              (part.type === "filter" && typeof part.value === "object") ||
-              (part.type === "slice" &&
-                (typeof part.start === "object" || typeof part.end === "object")),
-          ) === true
-        ) {
-          pathParseError = "Message paths using variables are not currently supported";
-        }
-        let latestMatchingQueriedData: unknown | undefined;
-        let error: Error | undefined;
-        try {
-          latestMatchingQueriedData =
-            newPath && pathParseError == undefined && state.latestMessage
-              ? getSingleDataItem(simpleGetMessagePathDataItems(state.latestMessage, newPath))
-              : undefined;
-        } catch (err) {
-          error = err;
-        }
-        return {
-          ...state,
-          path: action.path,
-          parsedPath: newPath,
-          latestMatchingQueriedData,
-          error,
-          pathParseError,
-        };
-      }
-      case "seek":
-        return {
-          ...state,
-          latestMessage: undefined,
-          latestMatchingQueriedData: undefined,
-          error: undefined,
-        };
-    }
-  } catch (error) {
-    return { ...state, latestMatchingQueriedData: undefined, error };
-  }
-}
 
 const gearObject = {
-  0: "ERROR",
-  1: "S",
-  2: "W",
-  3: "M",
-  4: "NONE",
-  5: "D",
-  6: "N",
-  7: "R",
-  8: "P",
+  '0': "ERROR",
+  '1': "S",
+  '2': "W",
+  '3': "M",
+  '4': "NONE",
+  '5': "D",
+  '6': "N",
+  '7': "R",
+  '8': "P",
 };
 const gearList = Object.values(gearObject);
 
-const lateralControlModeTxt = [
-  "INVALID",
-  "LANE_FOLLOW",
-  "CRAB_DRIVE",
-  "LANE_CHANGE",
-];
-const longitudinalControlModeTxt = [
-  "INVALID",
-  "SPEED_MODE",
-  "ACC_MODE",
-  "DISTANCE_MODE",
-  "PRECISE_MOVE_MODE",
-];
-const behavior_typeTxt = {
-  0: "INVALID",
-  1: "LANE_KEEP",
-  20: "BREAKTHROUGH",
-  31: "LEFT_LANE_CHANGE_PREPARE",
-  32: "RIGHT_LANE_CHANGE_PREPARE",
-  41: "LEFT_LANE_CHANGE",
-  42: "RIGHT_LANE_CHANGE",
-  51: "LEFT_LANE_CHANGE_HOLD",
-  52: "RIGHT_LANE_CHANGE_HOLD",
-  61: "LEFT_LANE_CHANGE_CANCEL",
-  62: "RIGHT_LANE_CHANGE_CANCEL",
+const behavior_typeTxt: any = {
+  '0': "INVALID",
+  '1': "LANE_KEEP",
+  '20': "BREAKTHROUGH",
+  '31': "LEFT_LANE_CHANGE_PREPARE",
+  '32': "RIGHT_LANE_CHANGE_PREPARE",
+  '41': "LEFT_LANE_CHANGE",
+  '42': "RIGHT_LANE_CHANGE",
+  '51': "LEFT_LANE_CHANGE_HOLD",
+  '52': "RIGHT_LANE_CHANGE_HOLD",
+  '61': "LEFT_LANE_CHANGE_CANCEL",
+  '62': "RIGHT_LANE_CHANGE_CANCEL",
 };
 
 const desiredGearTxt = [
@@ -194,8 +71,8 @@ function keepDecimalPlaces(num: number | string, decimalPlaces = 3) {
   return num;
 }
 
-function Dashboard({ config, saveConfig }: Props): JSX.Element {
-  const { topicPath } = defaultConfig;
+function Dashboard(): JSX.Element {
+  const topicPath  = "/utosim/dashboard";
 
   const vehicleDrivingInfo = {
     speed: "N/A",
@@ -254,15 +131,14 @@ function Dashboard({ config, saveConfig }: Props): JSX.Element {
   const cachedGetMessagePathDataItems = useCachedGetMessagePathDataItems([topicPath]);
   const msg = msgs?.[0];
   const cachedMessages = msg ? cachedGetMessagePathDataItems(topicPath, msg) ?? [] : [];
-  const firstCachedMessage = cachedMessages[0]?.value;
+  const firstCachedMessage: any = cachedMessages[0]?.value;
 
   const [vehicleInfo, setVehicleInfo] = useState(vehicleDrivingInfo);
 
   useEffect(()=> {
     if (firstCachedMessage) {
-      const metaMessage = cloneDeep(firstCachedMessage)
-      // console.log(firstCachedMessage, 'firstCachedMessage');
-      metaMessage.speed = round(Number(firstCachedMessage.speed), 2)
+      const metaMessage: any = cloneDeep(firstCachedMessage);
+      metaMessage.speed = round(Number(firstCachedMessage.speed), 2);
       metaMessage.accel = round(Number(firstCachedMessage.accel), 2)
 
       if(firstCachedMessage.expected) {
@@ -279,11 +155,8 @@ function Dashboard({ config, saveConfig }: Props): JSX.Element {
       metaMessage.drive_info.yaw_rate = round(Number(firstCachedMessage.drive_info.yaw_rate), 4)
     }
 
-      // console.log(metaMessage, 'metaMessage');
       setVehicleInfo(metaMessage);
     }
-
-    // console.log(formatMessage, 'asdasdasdas');
   }, [firstCachedMessage])
 
   return (
@@ -321,7 +194,7 @@ function Dashboard({ config, saveConfig }: Props): JSX.Element {
                 />
                 {
                   gearList.map((gear, i) => {
-                    return <span className={`${vehicleInfo.drive_info.gear === i ? "tadviz-active" : ''}`} key={i}>{ gear }</span>;
+                    return <span className={`${Number(vehicleInfo.drive_info.gear) == i ? "tadviz-active" : ''}`} key={i}>{ gear }</span>;
                   })
                 }
               </div>
@@ -387,7 +260,7 @@ function Dashboard({ config, saveConfig }: Props): JSX.Element {
               <div className={"tadviz-row"}>
                 <div className={"tadviz-label"}>换道信息</div>
                 <div className={"tadviz-value"}>
-                  { behavior_typeTxt[vehicleInfo.behavior_type] || "N/A" }
+                  { behavior_typeTxt[String(vehicleInfo.behavior_type)] || "N/A" }
                 </div>
               </div>
             </div>
@@ -540,6 +413,6 @@ function Dashboard({ config, saveConfig }: Props): JSX.Element {
 }
 
 Dashboard.panelType = "Dashboard";
-Dashboard.defaultConfig = defaultConfig;
+Dashboard.defaultConfig = {};
 
 export default Panel(Dashboard);

@@ -1,7 +1,11 @@
 import "./baseProgress.css"
 import { useCallback, useEffect, useLayoutEffect, useReducer, useState } from "react";
 
-export function BaseProgress (props) {
+type Props = {
+  percentage: number;
+}
+
+export function BaseProgress (props: Props) {
 
   return (
     <div className={"tadviz-progress"}>

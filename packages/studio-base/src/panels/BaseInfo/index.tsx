@@ -17,11 +17,11 @@ import PanelToolbar from "@foxglove/studio-base/components/PanelToolbar";
 import Stack from "@foxglove/studio-base/components/Stack";
 import { Topic } from "@foxglove/studio-base/src/players/types";
 
-const useStyles = makeStyles<void, "copyIcon">()((theme, _params, classes) => ({
+const useStyles = makeStyles()({
   overline: {
     opacity: 0.6,
-  },
-}));
+  }
+});
 
 const infoList = [
   {

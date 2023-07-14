@@ -13,10 +13,10 @@ type Props = { config: Config; saveConfig: SaveConfig<Config> };
 
 
 function UtoGauge({ config, saveConfig }: Props): JSX.Element {
-  const chartRef = useRef(null)
-  const chartRef2 = useRef(null)
-  const [chart, setChart] = useState();
-  const [chart2, setChart2] = useState();
+  const chartRef: any = useRef(null)
+  const chartRef2: any = useRef(null)
+  const [chart, setChart] = useState<any>();
+  const [chart2, setChart2] = useState<any>();
 
   const handleResize = () => {
     chart?.resize();
@@ -57,8 +57,8 @@ function UtoGauge({ config, saveConfig }: Props): JSX.Element {
 
     const option = {
       backgroundColor: '#010101',
-      series: (function() {
-        var result = [];
+      series: (function() :any[] {
+        var result: any[] = [];
 
         demoData.forEach(function(item) {
           result.push(
@@ -254,7 +254,7 @@ function UtoGauge({ config, saveConfig }: Props): JSX.Element {
       })()
     };
 
-    const _chart = echarts.init(chartRef.current as any as HTMLElement);
+    const _chart: any = echarts.init(chartRef.current as any as HTMLElement);
     _chart.setOption(option);
     window.addEventListener('resize', handleResize);
     setChart(_chart);
@@ -436,7 +436,6 @@ function UtoGauge({ config, saveConfig }: Props): JSX.Element {
       <PanelToolbar />
       <Stack
         fullHeight
-        flex
         gap={2}
         paddingY={2}
         paddingX={3}

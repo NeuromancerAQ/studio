@@ -13,7 +13,16 @@ import { MessageDefinition } from "@foxglove/message-definition";
 import CommonRosTypes from "@foxglove/rosmsg-msgs-common";
 import { MessageWriter as Ros1MessageWriter } from "@foxglove/rosmsg-serialization";
 import { MessageWriter as Ros2MessageWriter } from "@foxglove/rosmsg2-serialization";
-import { clampTime, compare, fromMillis, fromNanoSec, isGreaterThan, isLessThan, Time, toString } from "@foxglove/rostime";
+import {
+  clampTime,
+  compare,
+  fromMillis,
+  fromNanoSec,
+  isGreaterThan,
+  isLessThan,
+  Time,
+  toString,
+} from "@foxglove/rostime";
 import { ParameterValue } from "@foxglove/studio";
 import NoopMetricsCollector from "@foxglove/studio-base/players/NoopMetricsCollector";
 import PlayerProblemManager from "@foxglove/studio-base/players/PlayerProblemManager";
@@ -130,10 +139,10 @@ export default class FoxgloveWebSocketPlayer implements Player {
   #currentTime?: Time;
   #speed: number = 1.0;
   #seekTarget?: Time;
-  #A2M: string;
-  #M2A: string;
-  #truckType: string = 'gt';
-  #sessionId: string;
+  #A2M?: string = "";
+  #M2A?: string = "";
+  #truckType?: string = "gt";
+  #sessionId?: string = "";
 
   #unresolvedSubscriptions = new Set<string>();
   #resolvedSubscriptionsByTopic = new Map<string, SubscriptionId>();
@@ -150,20 +159,18 @@ export default class FoxgloveWebSocketPlayer implements Player {
   #publicationsByTopic = new Map<string, Publication>();
   #serviceCallEncoding?: string;
   #servicesByName = new Map<string, ResolvedService>();
-  #serviceResponseCbs = new Map<
-    ServiceCallRequest["callId"],
-    (response: ServiceCallResponse) => void
-  >();
+  #serviceResponseCbs = new Map<ServiceCallRequest["callId"],
+    (response: ServiceCallResponse) => void>();
   #publishedTopics?: Map<string, Set<string>>;
   #subscribedTopics?: Map<string, Set<string>>;
   #advertisedServices?: Map<string, Set<string>>;
   #nextServiceCallId = 0;
 
   public constructor({
-    url,
-    metricsCollector,
-    sourceId,
-  }: {
+                       url,
+                       metricsCollector,
+                       sourceId,
+                     }: {
     url: string;
     metricsCollector: PlayerMetricsCollectorInterface;
     sourceId: string;
@@ -300,7 +307,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
         this.#resetSessionState();
       }
 
-      console.log(event, 'event');
+      console.log(event, "event");
 
       this.#id = newSessionId;
       this.#name = `${this.#url}\n${event.name}`;
@@ -333,8 +340,8 @@ export default class FoxgloveWebSocketPlayer implements Player {
         const rosDataTypes = isRos1
           ? CommonRosTypes.ros1
           : ["foxy", "galactic"].includes(rosDistro)
-          ? CommonRosTypes.ros2galactic
-          : CommonRosTypes.ros2humble;
+            ? CommonRosTypes.ros2galactic
+            : CommonRosTypes.ros2humble;
 
         const dataTypes: MessageDefinitionMap = new Map();
         for (const dataType in rosDataTypes) {
@@ -387,7 +394,11 @@ export default class FoxgloveWebSocketPlayer implements Player {
         this.#client?.subscribeConnectionGraph();
       }
 
-      this.setPublishers([{ topic:'/utosim/ui', schemaName: 'foxglove.KeyValuePair', options: { datatypes: this.#datatypes}}]);
+      this.setPublishers([{
+        topic: "/utosim/ui",
+        schemaName: "foxglove.KeyValuePair",
+        options: { datatypes: this.#datatypes },
+      }]);
       this.#emitState();
     });
 
@@ -492,7 +503,11 @@ export default class FoxgloveWebSocketPlayer implements Player {
         this.#channelsByTopic.set(channel.topic, resolvedChannel);
       }
       this.#updateTopicsAndDatatypes();
-      this.setPublishers([{ topic:'/utosim/ui', schemaName: 'foxglove.KeyValuePair', options: { datatypes: this.#datatypes}}]);
+      this.setPublishers([{
+        topic: "/utosim/ui",
+        schemaName: "foxglove.KeyValuePair",
+        options: { datatypes: this.#datatypes },
+      }]);
       this.#emitState();
       this.#processUnresolvedSubscriptions();
     });
@@ -592,9 +607,9 @@ export default class FoxgloveWebSocketPlayer implements Player {
       const mappedParameters = parameters.map((param) => {
         return param.type === "byte_array"
           ? {
-              ...param,
-              value: Uint8Array.from(atob(param.value as string), (c) => c.charCodeAt(0)),
-            }
+            ...param,
+            value: Uint8Array.from(atob(param.value as string), (c) => c.charCodeAt(0)),
+          }
           : param;
       });
 
@@ -843,9 +858,9 @@ export default class FoxgloveWebSocketPlayer implements Player {
     this.#metricsCollector.play(this.#speed);
     this.#isPlaying = true;
     this.publish({
-      topic: '/utosim/ui',
-      msg: { "key": "play", "value": "true" }
-    })
+      topic: "/utosim/ui",
+      msg: { "key": "play", "value": "true" },
+    });
     this.#emitState();
   }
 
@@ -857,9 +872,9 @@ export default class FoxgloveWebSocketPlayer implements Player {
     this.#isPlaying = false;
     this.#untilTime = undefined;
     this.publish({
-      topic: '/utosim/ui',
-      msg: { "key": "play", "value": "false" }
-    })
+      topic: "/utosim/ui",
+      msg: { "key": "play", "value": "false" },
+    });
     this.#emitState();
   }
 
@@ -905,10 +920,10 @@ export default class FoxgloveWebSocketPlayer implements Player {
     this.#seekTarget = targetTime;
     this.#untilTime = undefined;
 
-    const {sec, nsec} = targetTime
+    const { sec, nsec } = targetTime;
     this.publish({
-      topic: '/utosim/ui',
-      msg: { "key": "jump", "value": `${sec}${nsec.toFixed().padStart(9, "0")}`}
+      topic: "/utosim/ui",
+      msg: { "key": "jump", "value": `${sec}${nsec.toFixed().padStart(9, "0")}` },
     });
     this.#currentTime = targetTime;
     this.#emitState();
@@ -1124,7 +1139,8 @@ export default class FoxgloveWebSocketPlayer implements Player {
     });
   }
 
-  public setGlobalVariables(): void {}
+  public setGlobalVariables(): void {
+  }
 
   // Return the current time
   //
@@ -1299,11 +1315,18 @@ function statusLevelToProblemSeverity(level: StatusLevel): PlayerProblem["severi
   }
 }
 
-function formatFoxgloveTime(value: string): Time {
-  const sec = Math.trunc(value / 1e9);
-  const nsec = value % 1e9;
-  return {
-    sec: sec,
-    nsec: nsec
+function formatFoxgloveTime(value: string | undefined): Time {
+  if (value) {
+    const sec = Math.trunc(Number(value) / 1e9);
+    const nsec = Number(value) % 1e9;
+    return {
+      sec: sec,
+      nsec: nsec,
+    };
+  } else {
+    return {
+      sec: 0,
+      nsec: 0,
+    };
   }
 }

@@ -47,7 +47,8 @@ function useFeatures(): Feature[] {
     {
       key: AppSetting.SHOW_DEBUG_PANELS,
       name: t("studioDebugPanels"),
-      description: <>{t("studioDebugPanelsDescription")}</>,
+      // description: <>{t("studioDebugPanelsDescription")}</>,
+      description: <>在“添加面板”列表中显示 UtoViz 调试面板</>,
     },
     {
       key: AppSetting.ENABLE_MEMORY_USE_INDICATOR,

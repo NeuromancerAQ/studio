@@ -12,6 +12,7 @@
       "@foxglove/studio-base/*": ["./*"]
     },
     "experimentalDecorators": true,
-    "useUnknownInCatchVariables": false
+    "useUnknownInCatchVariables": false,
+    "noImplicitAny": false
   }
 }
