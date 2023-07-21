@@ -18,10 +18,8 @@ import {
   compare,
   fromMillis,
   fromNanoSec,
-  isGreaterThan,
   isLessThan,
-  Time,
-  toString,
+  Time
 } from "@foxglove/rostime";
 import { ParameterValue } from "@foxglove/studio";
 import NoopMetricsCollector from "@foxglove/studio-base/players/NoopMetricsCollector";
@@ -42,7 +40,6 @@ import {
 } from "@foxglove/studio-base/players/types";
 import { RosDatatypes } from "@foxglove/studio-base/types/RosDatatypes";
 import rosDatatypesToMessageDefinition from "@foxglove/studio-base/util/rosDatatypesToMessageDefinition";
-import { useDataSourceInfo } from "@foxglove/studio-base/PanelAPI";
 
 import {
   Channel,
@@ -62,8 +59,6 @@ import {
 import { JsonMessageWriter } from "./JsonMessageWriter";
 import { MessageWriter } from "./MessageWriter";
 import WorkerSocketAdapter from "./WorkerSocketAdapter";
-import { IteratorResult } from "@foxglove/studio-base/players/IterablePlayer/IIterableSource";
-import { round } from "lodash";
 
 const log = Log.getLogger(__dirname);
 const textEncoder = new TextEncoder();
@@ -239,7 +234,6 @@ export default class FoxgloveWebSocketPlayer implements Player {
       }
       this.#resolvedSubscriptionsById.clear();
       this.#resolvedSubscriptionsByTopic.clear();
-
     });
 
     this.#client.on("error", (err) => {
@@ -503,11 +497,6 @@ export default class FoxgloveWebSocketPlayer implements Player {
         this.#channelsByTopic.set(channel.topic, resolvedChannel);
       }
       this.#updateTopicsAndDatatypes();
-      this.setPublishers([{
-        topic: "/utosim/ui",
-        schemaName: "foxglove.KeyValuePair",
-        options: { datatypes: this.#datatypes },
-      }]);
       this.#emitState();
       this.#processUnresolvedSubscriptions();
     });
@@ -592,7 +581,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
       if (!this.#serverPublishesTime) {
         return;
       }
-      // console.log(timestamp, 'timestamp');
+
       const time = fromNanoSec(timestamp);
       if (this.#clockTime != undefined && isLessThan(time, this.#clockTime)) {
         this.#numTimeSeeks++;
@@ -900,7 +889,6 @@ export default class FoxgloveWebSocketPlayer implements Player {
       throw new Error("invariant: initialized but no start/end set");
     }
 
-    // console.log(time, 'ottttt');
     // Limit seek to within the valid range
     const targetTime = clampTime(time, this.#startTime, this.#endTime);
 
@@ -1002,8 +990,15 @@ export default class FoxgloveWebSocketPlayer implements Player {
   }
 
   public setPublishers(publishers: AdvertiseOptions[]): void {
+
+    const utoPublishers = publishers.concat([{
+      topic: "/utosim/ui",
+      schemaName: "foxglove.KeyValuePair",
+      options: { datatypes: this.#datatypes }
+    }])
+
     // Filter out duplicates.
-    const uniquePublications = uniqWith(publishers, isEqual);
+    const uniquePublications = uniqWith(utoPublishers, isEqual);
 
     // Save publications and return early if we are not connected.
     if (!this.#client || this.#closed) {
@@ -1039,9 +1034,9 @@ export default class FoxgloveWebSocketPlayer implements Player {
     }
 
     if (removedPublications.length > 0 || newPublications.length > 0) {
+      this.#presence = PlayerPresence.PRESENT;
       this.#emitState();
     }
-    this.#presence = PlayerPresence.PRESENT;
   }
 
   public setParameter(key: string, value: ParameterValue): void {
@@ -1237,6 +1232,8 @@ export default class FoxgloveWebSocketPlayer implements Player {
         this.#problems.removeProblem(problemId);
       }
     }
+
+    this.#presence = PlayerPresence.PRESENT;
   }
 
   #unadvertiseChannel(channel: Publication) {

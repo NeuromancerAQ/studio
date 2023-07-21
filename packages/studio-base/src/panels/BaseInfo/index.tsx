@@ -2,101 +2,182 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { Divider, Skeleton, Typography } from "@mui/material";
+import { Typography } from "@mui/material";
 import { makeStyles } from "tss-react/mui";
 
-import CopyButton from "@foxglove/studio-base/components/CopyButton";
-import { DirectTopicStatsUpdater } from "@foxglove/studio-base/components/DirectTopicStatsUpdater";
-import EmptyState from "@foxglove/studio-base/components/EmptyState";
-import {
-  MessagePipelineContext,
-  useMessagePipeline,
-} from "@foxglove/studio-base/components/MessagePipeline";
 import Panel from "@foxglove/studio-base/components/Panel";
 import PanelToolbar from "@foxglove/studio-base/components/PanelToolbar";
 import Stack from "@foxglove/studio-base/components/Stack";
-import { Topic } from "@foxglove/studio-base/src/players/types";
+import { RosPath } from "@foxglove/studio-base/components/MessagePathSyntax/constants";
+import parseRosPath from "@foxglove/studio-base/components/MessagePathSyntax/parseRosPath";
+import { useMessagesByTopic } from "@foxglove/studio-base/PanelAPI";
+import { useCachedGetMessagePathDataItems } from "@foxglove/studio-base/components/MessagePathSyntax/useCachedGetMessagePathDataItems";
+import { useEffect, useState } from "react";
+import { planningPath, taskManagePath } from "./info";
+import {get} from "lodash";
 
 const useStyles = makeStyles()({
   overline: {
     opacity: 0.6,
-  }
+  },
 });
 
-const infoList = [
-  {
-    label: '车辆类型',
-    value: 'N/A'
-  },
-  {
-    label: '时间戳',
-    value: 'N/A'
-  },
-  {
-    label: 'Plan任务ID',
-    value: 'N/A'
-  },
-  {
-    label: 'Plan任务阶段',
-    value: 'N/A'
-  },
-  {
-    label: 'Plan任务终点类型',
-    value: 'N/A'
-  },
-  {
-    label: '剩余距离',
-    value: 'N/A'
-  },
-  {
-    label: '规划内部场景',
-    value: 'N/A'
-  },
-  {
-    label: '规划内部任务阶段',
-    value: 'N/A'
-  },
-  {
-    label: '规划当前执行的task',
-    value: 'N/A'
-  },
-  {
-    label: '规划绕行调试信息',
-    value: 'N/A'
-  },
-  {
-    label: 'TaskMgr任务ID',
-    value: 'N/A'
-  },
-  {
-    label: 'TaskMgr任务',
-    value: 'N/A'
-  },
-  {
-    label: '终点港口',
-    value: 'N/A'
-  },
-  {
-    label: '终点类型',
-    value: 'N/A'
-  },
-  {
-    label: '终点库位ID',
-    value: 'N/A'
-  },
-  {
-    label: '去缓冲区原因',
-    value: 'N/A'
-  },
-  {
-    label: '任务状态',
-    value: 'N/A'
+const getDataValueByFieldName = (data: unknown, path: string) => {
+  if (!data || !path || typeof path !== "string") {
+    return "N/A";
   }
-];
+  const keys = path.split(".");
+  keys.shift();
+  if (!keys.length) {
+    return "N/A";
+  }
+  let copyData: unknown = data;
+  for (let i = 0; i < keys.length; i++) {
+    let key = keys[i];
+    if (Array.isArray(copyData)) {
+      if (/^\[\d{1,}\]$/.test(key)) {
+        key = key.substring(1, key.length - 1);
+      } else {
+        copyData = copyData[0];
+      }
+    }
+    if (copyData && copyData[key] !== undefined) {
+      copyData = copyData[key];
+    } else {
+      copyData = "N/A";
+      break;
+    }
+  }
 
+  return copyData;
+}
 
 function BaseInfo(): JSX.Element {
   const { classes } = useStyles();
+  const planningTopicPath = "/planning/planning_visualization";
+  const taskManagerTopicPath = "/task_manager/task_visualization";
+
+  const pTopicRosPath: RosPath | undefined = React.useMemo(
+    () => parseRosPath(planningTopicPath),
+    [planningTopicPath],
+  );
+
+  const tTopicRosPath: RosPath | undefined = React.useMemo(
+    () => parseRosPath(taskManagerTopicPath),
+    [taskManagerTopicPath],
+  );
+
+  const pTopicName = pTopicRosPath?.topicName ?? "";
+  const tTopicName = tTopicRosPath?.topicName ?? "";
+  const pMsgs = useMessagesByTopic({ topics: [pTopicName], historySize: 1 })[pTopicName];
+  const tMsgs = useMessagesByTopic({ topics: [tTopicName], historySize: 1 })[tTopicName];
+  const pCachedGetMessagePathDataItems = useCachedGetMessagePathDataItems([planningTopicPath]);
+  const tCachedGetMessagePathDataItems = useCachedGetMessagePathDataItems([taskManagerTopicPath]);
+  const pMsg = pMsgs?.[0];
+  const tMsg = tMsgs?.[0];
+  const pCachedMessages = pMsg ? pCachedGetMessagePathDataItems(planningTopicPath, pMsg) ?? [] : [];
+  const tCachedMessages = tMsg ? tCachedGetMessagePathDataItems(taskManagerTopicPath, tMsg) ?? [] : [];
+  const pMessages = pCachedMessages[0]?.value;
+  const tMessages = tCachedMessages[0]?.value;
+
+  const [pInfoList, setPInfoList] = useState([
+    {
+      label: "车辆类型",
+      value: "N/A",
+    },
+    {
+      label: "时间戳",
+      value: "N/A",
+    },
+    {
+      label: "Plan任务ID",
+      value: "N/A",
+    },
+    {
+      label: "Plan任务阶段",
+      value: "N/A",
+    },
+    {
+      label: "Plan任务终点类型",
+      value: "N/A",
+    },
+    {
+      label: "剩余距离",
+      value: "N/A",
+    },
+    {
+      label: "规划内部场景",
+      value: "N/A",
+    },
+    {
+      label: "规划内部任务阶段",
+      value: "N/A",
+    },
+    {
+      label: "规划当前执行的task",
+      value: "N/A",
+    },
+    {
+      label: "规划绕行调试信息",
+      value: "N/A",
+    },
+  ]);
+  const [tInfoList, setTInfoList] = useState([
+    {
+      label: "TaskMgr任务ID",
+      value: "N/A",
+    },
+    {
+      label: "TaskMgr任务",
+      value: "N/A",
+    },
+    {
+      label: "终点港口",
+      value: "N/A",
+    },
+    {
+      label: "终点类型",
+      value: "N/A",
+    },
+    {
+      label: "终点库位ID",
+      value: "N/A",
+    },
+    {
+      label: "去缓冲区原因",
+      value: "N/A",
+    },
+    {
+      label: "任务状态",
+      value: "N/A",
+    }]);
+
+  useEffect(() => {
+    if (pMessages) {
+      const newPInfoList: {label: string, value: any}[] = planningPath.map(item => {
+        return {
+          label: item.label,
+          value: item.format ? item.format(get(pMessages, item.path, "N/A")) : get(pMessages, item.path, "N/A")
+        }
+      })
+
+      setPInfoList(newPInfoList);
+    }
+  }, [pMessages]);
+
+  useEffect(() => {
+    if (tMessages) {
+
+      const newTInfoList: {label: string, value: any}[] = taskManagePath.map(item => {
+        return {
+          label: item.label,
+          value: get(tMessages, item.path, "N/A")
+        }
+      })
+
+      setTInfoList(newTInfoList);
+    }
+  }, [tMessages]);
 
   return (
     <>
@@ -107,9 +188,21 @@ function BaseInfo(): JSX.Element {
              paddingY={2}
              paddingX={3}>
         {
-          infoList.map((info, key) => {
+          pInfoList.map((info, key) => {
             return (
-              <div>
+              <div key={key}>
+                <Typography className={classes.overline} variant="overline">{info.label}</Typography>
+                <Typography variant="inherit" style={{
+                  whiteSpace: 'pre-line'
+                }}>{info.value}</Typography>
+              </div>
+            );
+          })
+        }
+        {
+          tInfoList.map((info, key) => {
+            return (
+              <div key={key}>
                 <Typography className={classes.overline} variant="overline">{info.label}</Typography>
                 <Typography variant="inherit">{info.value}</Typography>
               </div>

@@ -501,7 +501,7 @@ export default function Start(): JSX.Element {
                 secondaryText={item.secondaryText}
                 icon={item.icon}
                 onClick={item.onClick}
-                href={item.href}
+                // href={item.href}
                 target="_blank"
               />
             ))}
