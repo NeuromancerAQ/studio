@@ -48,6 +48,8 @@ import { DataSource } from "./DataSource";
 import { UserMenu } from "./UserMenu";
 import { APP_BAR_HEIGHT } from "./constants";
 
+import UploadButton from "./UploadButton";
+
 const useStyles = makeStyles<{ leftInset?: number; debugDragRegion?: boolean }, "avatar">()(
   (theme, { leftInset, debugDragRegion = false }, classes) => {
     const DRAGGABLE_STYLE: Record<string, string> = { WebkitAppRegion: "drag" };
@@ -311,6 +313,7 @@ export function AppBar(props: AppBarProps): JSX.Element {
           <div className={classes.end}>
             <div className={classes.endInner}>
               {enableMemoryUseIndicator && <MemoryUseIndicator />}
+              {<UploadButton />}
               {appBarLayoutButton}
               <Stack direction="row" alignItems="center" data-tourid="sidebar-button-group">
                 <AppBarIconButton
