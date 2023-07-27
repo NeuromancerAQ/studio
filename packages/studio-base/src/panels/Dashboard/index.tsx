@@ -138,7 +138,7 @@ function Dashboard(): JSX.Element {
   useEffect(()=> {
     if (firstCachedMessage) {
       const metaMessage: any = cloneDeep(firstCachedMessage);
-      metaMessage.speed = round(Number(firstCachedMessage.speed), 2);
+      metaMessage.speed = round(Number(firstCachedMessage.speed * 3.6), 2);
       metaMessage.accel = round(Number(firstCachedMessage.accel), 2)
 
       if(firstCachedMessage.expected) {
