@@ -6,6 +6,7 @@ import { vec3 } from "gl-matrix";
 import i18next from "i18next";
 import { debounce, maxBy } from "lodash";
 import * as THREE from "three";
+import { v4 as uuidv4 } from "uuid";
 
 import { UrdfGeometryMesh, UrdfRobot, UrdfVisual, parseRobot, UrdfJoint } from "@foxglove/den/urdf";
 import Logger from "@foxglove/log";
@@ -71,6 +72,7 @@ const RPY_LABEL: [string, string, string] = ["R", "P", "Y"];
 export type LayerSettingsUrdf = BaseSettings & {
   instanceId: string; // This will be set to the topic name
   displayMode: "auto" | "visual" | "collision";
+  label: string;
 };
 
 export type LayerSettingsCustomUrdf = CustomLayerSettings & {
@@ -85,6 +87,7 @@ const DEFAULT_SETTINGS: LayerSettingsUrdf = {
   frameLocked: true,
   instanceId: "invalid",
   displayMode: "auto",
+  label: "URDF",
 };
 
 const DEFAULT_CUSTOM_SETTINGS: LayerSettingsCustomUrdf = {
@@ -278,6 +281,7 @@ export class Urdfs extends SceneExtension<UrdfRenderable> {
 
         const fields: SettingsTreeFields = {
           url: { label: "URL", input: "string", placeholder, help, value: config.url ?? "" },
+          label: { label: "Label", input: "string", value: config.label ?? "URDF" },
           framePrefix: {
             label: "Frame prefix",
             input: "string",
@@ -294,7 +298,10 @@ export class Urdfs extends SceneExtension<UrdfRenderable> {
             icon: "PrecisionManufacturing",
             fields,
             visible: config.visible ?? DEFAULT_CUSTOM_SETTINGS.visible,
-            actions: [{ type: "action", id: "delete", label: "Delete" }],
+            actions: [
+              { type: "action", id: "duplicate", label: "Duplicate" },
+              { type: "action", id: "delete", label: "Delete" },
+            ],
             order: layerConfig.order,
             handler: this.#handleLayerSettingsAction,
             children: urdfChildren(
@@ -379,11 +386,10 @@ export class Urdfs extends SceneExtension<UrdfRenderable> {
   #handleLayerSettingsAction = (action: SettingsTreeAction): void => {
     const path = action.payload.path;
 
-    // Handle menu actions (delete)
-    if (action.action === "perform-node-action") {
-      if (path.length === 2 && action.payload.id === "delete") {
-        const instanceId = path[1]!;
-
+    // Handle menu actions (duplicate / delete)
+    if (action.action === "perform-node-action" && path.length === 2) {
+      const instanceId = path[1]!;
+      if (action.payload.id === "delete") {
         // Remove this instance from the config
         this.renderer.updateConfig((draft) => {
           delete draft.layers[instanceId];
@@ -413,9 +419,26 @@ export class Urdfs extends SceneExtension<UrdfRenderable> {
         // Update the settings tree
         this.updateSettingsTree();
         this.renderer.updateCustomLayersCount();
+      } else if (action.payload.id === "duplicate") {
+        const newInstanceId = uuidv4();
+        const config = {
+          ...this.renderer.config.layers[instanceId],
+          instanceId: newInstanceId,
+        };
+
+        // Add the new instance to the config
+        this.renderer.updateConfig((draft) => {
+          draft.layers[newInstanceId] = config;
+        });
+
+        // Add the URDF renderable
+        this.#loadUrdf(newInstanceId, undefined);
+
+        // Update the settings tree
+        this.updateSettingsTree();
+        this.renderer.updateCustomLayersCount();
       }
-      return;
-    } /* if (action.action === "update") */ else {
+    } else if (action.action === "update") {
       this.#handleSettingsUpdate(action);
     }
   };
@@ -501,18 +524,6 @@ export class Urdfs extends SceneExtension<UrdfRenderable> {
     if (typeof robotDescription === "string") {
       this.#loadUrdf(PARAM_KEY, robotDescription);
     }
-
-    // Update custom layer URDFs that use param:// URLs.
-    for (const [instanceId, renderable] of this.renderables.entries()) {
-      const url = (renderable.userData.settings as Partial<LayerSettingsCustomUrdf>).url ?? "";
-      if (url.startsWith("param://")) {
-        const paramName = url.slice("param://".length);
-        const urdf = parameters?.get(paramName);
-        if (typeof urdf === "string") {
-          this.#loadUrdf(instanceId, urdf);
-        }
-      }
-    }
   };
 
   #handleAddUrdf = (instanceId: string): void => {
@@ -547,26 +558,6 @@ export class Urdfs extends SceneExtension<UrdfRenderable> {
       return;
     }
     this.renderer.settings.errors.remove(renderable.userData.settingsPath, VALID_URL_ERR);
-
-    const { protocol } = new URL(url);
-
-    // Special case: Retrieve URDF from parameter store.
-    if (protocol === "param:") {
-      const paramName = url.slice("param://".length);
-      const urdfParam = this.renderer.parameters?.get(paramName) as string | undefined;
-
-      if (urdfParam) {
-        this.#loadUrdf(instanceId, urdfParam);
-        return;
-      } else {
-        this.renderer.settings.errors.add(
-          renderable.userData.settingsPath,
-          VALID_URL_ERR,
-          `Invalid parameter URL "${url}": The parameter "${paramName}" does not exist`,
-        );
-        return;
-      }
-    }
 
     // Check if this URL has already been fetched
     if (renderable.userData.url === url) {
@@ -637,6 +628,17 @@ export class Urdfs extends SceneExtension<UrdfRenderable> {
     const settingsPath = isTopicOrParam ? ["topics", instanceId] : ["layers", instanceId];
     const url = (settings as Partial<LayerSettingsCustomUrdf>).url;
     const framePrefix = (settings as Partial<LayerSettingsCustomUrdf>).framePrefix;
+    const label = (settings as Partial<LayerSettingsCustomUrdf>).label ?? "URDF";
+
+    if (label !== renderable?.userData.settings.label) {
+      // Label has changed, update the config
+      this.renderer.updateConfig((draft) => {
+        const config = draft.layers[instanceId];
+        if (config) {
+          config.label = label;
+        }
+      });
+    }
 
     // Create a UrdfRenderable if it does not already exist
     if (!renderable) {
@@ -927,7 +929,7 @@ function createMeshMarker(
   };
 }
 
-const VALID_PROTOCOLS = ["https:", "http:", "file:", "data:", "package:", "param:"];
+const VALID_PROTOCOLS = ["https:", "http:", "file:", "data:", "package:"];
 
 function isValidUrl(str: string): boolean {
   try {
