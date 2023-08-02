@@ -98,6 +98,8 @@ const selectIsPlaying = (ctx: MessagePipelineContext) =>
 const selectPause = (ctx: MessagePipelineContext) => ctx.pausePlayback;
 const selectPlay = (ctx: MessagePipelineContext) => ctx.startPlayback;
 const selectSeek = (ctx: MessagePipelineContext) => ctx.seekPlayback;
+const selectSeekForward = (ctx: MessagePipelineContext) => ctx.seekForward;
+const selectSeekBackward = (ctx: MessagePipelineContext) => ctx.seekBackward;
 const selectPlayUntil = (ctx: MessagePipelineContext) => ctx.playUntil;
 const selectPlayerId = (ctx: MessagePipelineContext) => ctx.playerState.playerId;
 const selectEventsSupported = (store: EventsStore) => store.eventsSupported;
@@ -385,6 +387,8 @@ function WorkspaceContent(props: WorkspaceProps): JSX.Element {
   const playUntil = useMessagePipeline(selectPlayUntil);
   const pause = useMessagePipeline(selectPause);
   const seek = useMessagePipeline(selectSeek);
+  const seekForward = useMessagePipeline(selectSeekForward);
+  const seekBackward = useMessagePipeline(selectSeekBackward);
   const isPlaying = useMessagePipeline(selectIsPlaying);
   const getMessagePipeline = useMessagePipelineGetter();
   const getTimeInfo = useCallback(
@@ -482,6 +486,8 @@ function WorkspaceContent(props: WorkspaceProps): JSX.Element {
               play={play}
               pause={pause}
               seek={seek}
+              seekForward={seekForward}
+              seekBackward={seekBackward}
               playUntil={playUntil}
               isPlaying={isPlaying}
               getTimeInfo={getTimeInfo}

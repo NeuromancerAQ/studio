@@ -61,6 +61,8 @@ export interface Player {
   // Basic playback controls. Available if `capabilities` contains PlayerCapabilities.playbackControl.
   startPlayback?(): void;
   pausePlayback?(): void;
+  seekForward?(): void;
+  seekBackward?(): void;
   seekPlayback?(time: Time): void;
   playUntil?(time: Time): void;
   // Seek to a particular time. Might trigger backfilling.
@@ -197,6 +199,9 @@ export type PlayerStateActiveData = {
   // A map of parameter names to parameter values, used to describe remote parameters such as
   // rosparams.
   parameters?: Map<string, ParameterValue>;
+
+  A2M?: string | "";
+  M2A?: string | "";
 };
 
 // Represents a ROS topic, though the actual data does not need to come from a ROS system.

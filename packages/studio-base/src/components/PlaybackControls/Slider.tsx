@@ -24,6 +24,8 @@ type Props = {
   onHoverOver?: (event: HoverOverEvent) => void;
   onHoverOut?: () => void;
   renderSlider?: (value?: number) => ReactNode;
+  A2M?: any;
+  M2A?: any;
 };
 
 const useStyles = makeStyles()((theme) => ({
@@ -47,6 +49,24 @@ const useStyles = makeStyles()((theme) => ({
     position: "absolute",
     height: "100%",
   },
+  markerA2M: {
+    label: "A2M",
+    backgroundColor: 'red',
+    position: "absolute",
+    height: 16,
+    borderRadius: 1,
+    width: 2,
+    transform: "translate(-50%, 0)",
+  },
+  markerM2A: {
+    label: "M2A",
+    backgroundColor: 'blue',
+    position: "absolute",
+    height: 16,
+    borderRadius: 1,
+    width: 2,
+    transform: "translate(-50%, 0)",
+  },
 }));
 
 function defaultRenderSlider(value: number | undefined, className: string): ReactNode {
@@ -54,6 +74,13 @@ function defaultRenderSlider(value: number | undefined, className: string): Reac
     return ReactNull;
   }
   return <div className={className} style={{ width: `${value * 100}%` }} />;
+}
+
+function RenderItem(value: number | undefined, className: string): ReactNode {
+  if (value == undefined || isNaN(value)) {
+    return ReactNull;
+  }
+  return <div className={className} style={{ left: `${value * 100}%` }} />;
 }
 
 export default function Slider(props: Props): JSX.Element {
@@ -64,6 +91,8 @@ export default function Slider(props: Props): JSX.Element {
     onHoverOver,
     onHoverOut,
     onChange,
+    A2M,
+    M2A
   } = props;
   const { classes, cx } = useStyles();
 
@@ -176,6 +205,16 @@ export default function Slider(props: Props): JSX.Element {
       })}
     >
       {renderSlider(fraction, classes.range)}
+      {
+        A2M.map(val => {
+          return RenderItem(val, classes.markerA2M)
+        })
+      }
+      {
+        M2A.map(val => {
+          return RenderItem(val, classes.markerM2A)
+        })
+      }
     </div>
   );
 }

@@ -313,7 +313,7 @@ export function AppBar(props: AppBarProps): JSX.Element {
           <div className={classes.end}>
             <div className={classes.endInner}>
               {enableMemoryUseIndicator && <MemoryUseIndicator />}
-              {<UploadButton />}
+              {/*{<UploadButton />}*/}
               {appBarLayoutButton}
               <Stack direction="row" alignItems="center" data-tourid="sidebar-button-group">
                 <AppBarIconButton

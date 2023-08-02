@@ -309,8 +309,8 @@ export default class FoxgloveWebSocketPlayer implements Player {
       this.#serverPublishesTime = this.#serverCapabilities.includes(ServerCapability.time);
       this.#supportedEncodings = event.supportedEncodings;
       this.#datatypes = new Map();
-      this.#A2M = event.metadata?.A2M;
-      this.#M2A = event.metadata?.M2A;
+      this.#A2M = event.metadata?.A2M || "";
+      this.#M2A = event.metadata?.M2A || "";
       this.#truckType = event.metadata?.TruckType;
       this.#sessionId = event.sessionId;
 
@@ -816,6 +816,8 @@ export default class FoxgloveWebSocketPlayer implements Player {
         publishedTopics: this.#publishedTopics,
         subscribedTopics: this.#subscribedTopics,
         services: this.#advertisedServices,
+        A2M: this.#A2M,
+        M2A: this.#M2A
       },
     });
   });
@@ -863,6 +865,22 @@ export default class FoxgloveWebSocketPlayer implements Player {
     this.publish({
       topic: "/utosim/ui",
       msg: { "key": "play", "value": "false" },
+    });
+    this.#emitState();
+  }
+
+  public seekForward(): void {
+    this.publish({
+      topic: "/utosim/ui",
+      msg: { key: "step", "value": "next" },
+    });
+    this.#emitState();
+  }
+
+  public seekBackward(): void {
+    this.publish({
+      topic: "/utosim/ui",
+      msg: { key: "step", "value": "previous" },
     });
     this.#emitState();
   }

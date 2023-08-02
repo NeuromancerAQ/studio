@@ -61,9 +61,28 @@ const selectRanges = (ctx: MessagePipelineContext) =>
   ctx.playerState.progress.fullyLoadedFractionRanges;
 const selectPresence = (ctx: MessagePipelineContext) => ctx.playerState.presence;
 
+const selectA2M = (ctx: MessagePipelineContext) => ctx.playerState.activeData?.A2M;
+const selectM2A = (ctx: MessagePipelineContext) => ctx.playerState.activeData?.M2A;
+
 type Props = {
   onSeek: (seekTo: Time) => void;
 };
+
+function formatFoxgloveTime(value: string | undefined): Time {
+  if (value) {
+    const sec = Math.trunc(Number(value) / 1e9);
+    const nsec = Number(value) % 1e9;
+    return {
+      sec: sec,
+      nsec: nsec,
+    };
+  } else {
+    return {
+      sec: 0,
+      nsec: 0,
+    };
+  }
+}
 
 export default function Scrubber(props: Props): JSX.Element {
   const { onSeek } = props;
@@ -76,6 +95,8 @@ export default function Scrubber(props: Props): JSX.Element {
   const endTime = useMessagePipeline(selectEndTime);
   const presence = useMessagePipeline(selectPresence);
   const ranges = useMessagePipeline(selectRanges);
+  const A2M = useMessagePipeline(selectA2M) || '';
+  const M2A = useMessagePipeline(selectM2A) || '';
 
   const setHoverValue = useSetHoverValue();
 
@@ -148,6 +169,17 @@ export default function Scrubber(props: Props): JSX.Element {
     currentTime && startTime && endTime
       ? toSec(subtractTimes(currentTime, startTime)) / toSec(subtractTimes(endTime, startTime))
       : undefined;
+
+  const a2mArray = A2M.split(' ').map(val => {
+    const time = formatFoxgloveTime(val)
+    return time && startTime && endTime
+      ?  toSec(subtractTimes(time, startTime)) / toSec(subtractTimes(endTime, startTime)) : undefined;
+  }) || []
+  const m2aArray = M2A.split(' ').map(val => {
+    const time = formatFoxgloveTime(val)
+    return time && startTime && endTime
+      ?  toSec(subtractTimes(time, startTime)) / toSec(subtractTimes(endTime, startTime)) : undefined;
+  }) || []
 
   const loading = presence === PlayerPresence.INITIALIZING || presence === PlayerPresence.BUFFERING;
 
@@ -223,6 +255,8 @@ export default function Scrubber(props: Props): JSX.Element {
             onHoverOut={onHoverOut}
             onChange={onChange}
             renderSlider={renderSlider}
+            A2M={a2mArray}
+            M2A={m2aArray}
           />
         </Stack>
         <EventsOverlay />

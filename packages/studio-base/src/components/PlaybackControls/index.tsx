@@ -86,11 +86,13 @@ export default function PlaybackControls(props: {
   play: NonNullable<Player["startPlayback"]>;
   pause: NonNullable<Player["pausePlayback"]>;
   seek: NonNullable<Player["seekPlayback"]>;
+  seekForward: NonNullable<Player["seekForward"]>;
+  seekBackward: NonNullable<Player["seekBackward"]>;
   playUntil?: Player["playUntil"];
   isPlaying: boolean;
   getTimeInfo: () => { startTime?: Time; endTime?: Time; currentTime?: Time };
 }): JSX.Element {
-  const { play, pause, seek, isPlaying, getTimeInfo, playUntil } = props;
+  const { play, pause, seek, isPlaying, getTimeInfo, playUntil, seekForward, seekBackward } = props;
   const presence = useMessagePipeline(selectPresence);
 
   const { classes, cx } = useStyles();
@@ -120,6 +122,33 @@ export default function PlaybackControls(props: {
     }
   }, [isPlaying, pause, getTimeInfo, play, seek]);
 
+  // const seekForwardAction = useCallback(
+  //   (ev?: KeyboardEvent) => {
+  //     const { currentTime } = getTimeInfo();
+  //     if (!currentTime) {
+  //       return;
+  //     }
+  //
+  //     // If playUntil is available, we prefer to use that rather than seek, which performs a jump
+  //     // seek.
+  //     //
+  //     // Playing forward up to the desired seek time will play all messages to the panels which
+  //     // mirrors the behavior panels would expect when playing without stepping. This behavior is
+  //     // important for some message types which convey state information.
+  //     //
+  //     // i.e. Skipping coordinate frame messages may result in incorrectly rendered markers or
+  //     // missing markers altogther.
+  //     const targetTime = jumpSeek(DIRECTION.FORWARD, currentTime, ev);
+  //
+  //     if (playUntil) {
+  //       playUntil(targetTime);
+  //     } else {
+  //       seek(targetTime);
+  //     }
+  //   },
+  //   [getTimeInfo, playUntil, seek],
+  // );
+
   const seekForwardAction = useCallback(
     (ev?: KeyboardEvent) => {
       const { currentTime } = getTimeInfo();
@@ -127,25 +156,21 @@ export default function PlaybackControls(props: {
         return;
       }
 
-      // If playUntil is available, we prefer to use that rather than seek, which performs a jump
-      // seek.
-      //
-      // Playing forward up to the desired seek time will play all messages to the panels which
-      // mirrors the behavior panels would expect when playing without stepping. This behavior is
-      // important for some message types which convey state information.
-      //
-      // i.e. Skipping coordinate frame messages may result in incorrectly rendered markers or
-      // missing markers altogther.
-      const targetTime = jumpSeek(DIRECTION.FORWARD, currentTime, ev);
-
-      if (playUntil) {
-        playUntil(targetTime);
-      } else {
-        seek(targetTime);
-      }
+      seekForward()
     },
-    [getTimeInfo, playUntil, seek],
+    [getTimeInfo, seekForward],
   );
+
+  // const seekBackwardAction = useCallback(
+  //   (ev?: KeyboardEvent) => {
+  //     const { currentTime } = getTimeInfo();
+  //     if (!currentTime) {
+  //       return;
+  //     }
+  //     seek(jumpSeek(DIRECTION.BACKWARD, currentTime, ev));
+  //   },
+  //   [getTimeInfo, seek],
+  // );
 
   const seekBackwardAction = useCallback(
     (ev?: KeyboardEvent) => {
@@ -153,9 +178,9 @@ export default function PlaybackControls(props: {
       if (!currentTime) {
         return;
       }
-      seek(jumpSeek(DIRECTION.BACKWARD, currentTime, ev));
+      seekBackward()
     },
-    [getTimeInfo, seek],
+    [getTimeInfo, seekBackward],
   );
 
   const keyDownHandlers = useMemo(

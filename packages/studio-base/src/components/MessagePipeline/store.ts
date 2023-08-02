@@ -150,6 +150,8 @@ export function createMessagePipelineStore({
       pausePlayback: undefined,
       setPlaybackSpeed: undefined,
       seekPlayback: undefined,
+      seekForward: undefined,
+      seekBackward: undefined,
 
       pauseFrame(name: string) {
         const condvar = new Condvar();
@@ -325,6 +327,12 @@ function updatePlayerStateAction(
       : undefined;
     newPublicState.seekPlayback = capabilities.includes(PlayerCapabilities.playbackControl)
       ? player.seekPlayback?.bind(player)
+      : undefined;
+    newPublicState.seekForward = capabilities.includes(PlayerCapabilities.playbackControl)
+      ? player.seekForward?.bind(player)
+      : undefined;
+    newPublicState.seekBackward = capabilities.includes(PlayerCapabilities.playbackControl)
+      ? player.seekBackward?.bind(player)
       : undefined;
   }
 

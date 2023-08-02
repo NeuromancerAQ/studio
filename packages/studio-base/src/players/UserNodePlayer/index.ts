@@ -1112,6 +1112,14 @@ export default class UserNodePlayer implements Player {
     this.#player.pausePlayback?.();
   }
 
+  public seekForward?(): void {
+    this.#player.seekForward?.();
+  }
+
+  public seekBackward?(): void {
+    this.#player.seekBackward?.();
+  }
+
   public playUntil(time: Time): void {
     if (this.#player.playUntil) {
       this.#player.playUntil(time);

@@ -115,6 +115,14 @@ export class TopicAliasingPlayer implements Player {
     this.#player.pausePlayback?.();
   }
 
+  public seekForward?(): void {
+    this.#player.seekForward?.();
+  }
+
+  public seekBackward?(): void {
+    this.#player.seekBackward?.();
+  }
+
   public seekPlayback?(time: Time): void {
     this.#player.seekPlayback?.(time);
   }
