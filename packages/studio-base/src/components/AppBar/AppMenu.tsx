@@ -182,6 +182,15 @@ export function AppMenu(props: AppMenuProps): JSX.Element {
       },
       {
         type: "item",
+        label: "Reset layout",
+        key: "reset-layout",
+        onClick: () => {
+          layoutActions.resetLayout();
+          handleNestedMenuClose();
+        },
+      },
+      {
+        type: "item",
         label: t("importLayoutFromFile"),
         key: "import-layout",
         onClick: () => {

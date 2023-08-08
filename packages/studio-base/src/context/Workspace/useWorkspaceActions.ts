@@ -23,6 +23,7 @@ import {
 import useCallbackWithToast from "@foxglove/studio-base/hooks/useCallbackWithToast";
 import { AppEvent } from "@foxglove/studio-base/services/IAnalytics";
 import { downloadTextFile } from "@foxglove/studio-base/util/download";
+import { defaultLayout } from "@foxglove/studio-base/providers/CurrentLayoutProvider/defaultLayout";
 
 import {
   WorkspaceContext,
@@ -80,6 +81,7 @@ export type WorkspaceActions = {
     // Export the current layout to a file
     // This will perform a browser download of the current layout to a file
     exportToFile: () => void;
+    resetLayout: () => void;
   };
 };
 
@@ -176,6 +178,10 @@ export function useWorkspaceActions(): WorkspaceActions {
     downloadTextFile(content, `${name}.json`);
     void analytics.logEvent(AppEvent.LAYOUT_EXPORT);
   }, [analytics, getCurrentLayoutState]);
+
+  const resetLayout = useCallback(() => {
+    setCurrentLayout({ data: defaultLayout });
+  }, [analytics, appContext, isMounted, setCurrentLayout])
 
   return useMemo(() => {
     return {
@@ -312,7 +318,8 @@ export function useWorkspaceActions(): WorkspaceActions {
       layoutActions: {
         importFromFile: importLayoutFromFile,
         exportToFile: exportLayoutToFile,
+        resetLayout: resetLayout,
       },
     };
-  }, [exportLayoutToFile, importLayoutFromFile, openFile, set]);
+  }, [exportLayoutToFile, importLayoutFromFile, openFile, set, resetLayout]);
 }
