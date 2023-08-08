@@ -11,8 +11,10 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
+import { keyBy } from "lodash";
 import { useCallback, useMemo } from "react";
 
+import { filterMap } from "@foxglove/den/collection";
 import { useDeepMemo, useShallowMemo } from "@foxglove/hooks";
 import { Immutable } from "@foxglove/studio";
 import * as PanelAPI from "@foxglove/studio-base/PanelAPI";
@@ -24,8 +26,7 @@ import { RosDatatypes } from "@foxglove/studio-base/types/RosDatatypes";
 import {
   enumValuesByDatatypeAndField,
   extractTypeFromStudioEnumAnnotation,
-  getTopicsByTopicName,
-} from "@foxglove/studio-base/util/selectors";
+} from "@foxglove/studio-base/util/enums";
 
 import { MessagePathStructureItem, MessagePathStructureItemMessage, RosPath } from "./constants";
 import { filterMatches } from "./filterMatches";
@@ -51,47 +52,45 @@ export function useCachedGetMessagePathDataItems(
   const { globalVariables } = useGlobalVariables();
   const memoizedPaths = useShallowMemo(paths);
 
+  const parsedPaths = useMemo(() => {
+    return filterMap(memoizedPaths, (path) => {
+      const rosPath = parseRosPath(path);
+      return rosPath ? ([path, rosPath] satisfies [string, RosPath]) : undefined;
+    });
+  }, [memoizedPaths]);
+
   // We first fill in global variables in the paths, so we can later see which paths have really
   // changed when the global variables have changed.
-  const unmemoizedFilledInPaths: {
-    [key: string]: RosPath;
-  } = useMemo(() => {
+  const unmemoizedFilledInPaths = useMemo(() => {
     const filledInPaths: Record<string, RosPath> = {};
-    for (const path of memoizedPaths) {
-      const rosPath = parseRosPath(path);
-      if (rosPath) {
-        filledInPaths[path] = fillInGlobalVariablesInPath(rosPath, globalVariables);
-      }
+    for (const [path, parsedPath] of parsedPaths) {
+      filledInPaths[path] = fillInGlobalVariablesInPath(parsedPath, globalVariables);
     }
     return filledInPaths;
-  }, [globalVariables, memoizedPaths]);
-  const memoizedFilledInPaths = useDeepMemo<{
-    [key: string]: RosPath;
-  }>(unmemoizedFilledInPaths);
+  }, [globalVariables, parsedPaths]);
+  const memoizedFilledInPaths = useDeepMemo(unmemoizedFilledInPaths);
+
+  const topicsByName = useMemo(() => keyBy(providerTopics, ({ name }) => name), [providerTopics]);
 
   // Filter down topics and datatypes to only the ones we need to process the requested paths, so
   // our result can be dependent on the relevant topics only. Without this, adding topics/datatypes
   // dynamically would result in panels clearing out when their message reducers change as a result
   // of the change in topics/datatypes identity from the player.
   const unmemoizedRelevantTopics = useMemo(() => {
-    const topicsByName = getTopicsByTopicName(providerTopics);
     const seenNames = new Set<string>();
     const result: Topic[] = [];
-    for (const path of memoizedPaths) {
-      const rosPath = parseRosPath(path);
-      if (rosPath) {
-        if (seenNames.has(rosPath.topicName)) {
-          continue;
-        }
-        seenNames.add(rosPath.topicName);
-        const topic = topicsByName[rosPath.topicName];
-        if (topic) {
-          result.push(topic);
-        }
+    for (const [_, parsedPath] of parsedPaths) {
+      if (seenNames.has(parsedPath.topicName)) {
+        continue;
+      }
+      seenNames.add(parsedPath.topicName);
+      const topic = topicsByName[parsedPath.topicName];
+      if (topic) {
+        result.push(topic);
       }
     }
     return result;
-  }, [providerTopics, memoizedPaths]);
+  }, [topicsByName, parsedPaths]);
   const relevantTopics = useDeepMemo(unmemoizedRelevantTopics);
 
   const unmemoizedRelevantDatatypes = useMemo(() => {
@@ -123,6 +122,13 @@ export function useCachedGetMessagePathDataItems(
   }, [datatypes, relevantTopics]);
   const relevantDatatypes = useDeepMemo(unmemoizedRelevantDatatypes);
 
+  const structures = useMemo(() => messagePathStructures(relevantDatatypes), [relevantDatatypes]);
+
+  const enumValues = useMemo(
+    () => enumValuesByDatatypeAndField(relevantDatatypes),
+    [relevantDatatypes],
+  );
+
   return useCallback(
     (path: string, message: MessageEvent): MessagePathDataItem[] | undefined => {
       if (!memoizedPaths.includes(path)) {
@@ -135,12 +141,13 @@ export function useCachedGetMessagePathDataItems(
       const messagePathDataItems = getMessagePathDataItems(
         message,
         filledInPath,
-        relevantTopics,
-        relevantDatatypes,
+        topicsByName,
+        structures,
+        enumValues,
       );
       return messagePathDataItems;
     },
-    [relevantDatatypes, memoizedFilledInPaths, memoizedPaths, relevantTopics],
+    [memoizedPaths, memoizedFilledInPaths, topicsByName, structures, enumValues],
   );
 }
 
@@ -181,15 +188,15 @@ export function fillInGlobalVariablesInPath(
 }
 
 // Get a new item that has `queriedData` set to the values and paths as queried by `rosPath`.
-// Exported just for tests.
+// Exported for tests.
 export function getMessagePathDataItems(
   message: MessageEvent,
   filledInPath: RosPath,
-  providerTopics: readonly Topic[],
-  datatypes: Immutable<RosDatatypes>,
+  topicsByName: Record<string, Topic>,
+  structures: Record<string, MessagePathStructureItemMessage>,
+  enumValues: ReturnType<typeof enumValuesByDatatypeAndField>,
 ): MessagePathDataItem[] | undefined {
-  const structures = messagePathStructures(datatypes);
-  const topic = getTopicsByTopicName(providerTopics)[filledInPath.topicName];
+  const topic = topicsByName[filledInPath.topicName];
 
   // We don't care about messages that don't match the topic we're looking for.
   if (!topic || message.topic !== filledInPath.topicName) {
@@ -229,7 +236,7 @@ export function getMessagePathDataItems(
       const prevPathItem = filledInPath.messagePath[pathIndex - 1];
       if (prevPathItem && prevPathItem.type === "name") {
         const fieldName = prevPathItem.name;
-        const enumMap = enumValuesByDatatypeAndField(datatypes)[structureItem.datatype];
+        const enumMap = enumValues[structureItem.datatype];
         constantName = enumMap?.[fieldName]?.[value];
       }
       queriedData.push({ value, path, constantName });
