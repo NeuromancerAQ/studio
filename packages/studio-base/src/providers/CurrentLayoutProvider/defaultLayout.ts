@@ -60,41 +60,16 @@ export const defaultLayout: LayoutData =
   staticDefaultLayout ??
   ({
     "configById": {
-      "BaseInfo!w6nnsu": {},
-      "3D!18i6zy7": {
-        "layers": {
-          "845139cb-26bc-40b3-8161-8ab60af4baf5": {
-            "visible": true,
-            "frameLocked": true,
-            "label": "Grid",
-            "instanceId": "845139cb-26bc-40b3-8161-8ab60af4baf5",
-            "layerId": "foxglove.Grid",
-            "size": 10,
-            "divisions": 10,
-            "lineWidth": 1,
-            "color": "#248eff7a",
-            "position": [
-              0,
-              0,
-              0
-            ],
-            "rotation": [
-              0,
-              0,
-              0
-            ],
-            "order": 1
-          }
-        },
+      "3D!mm4c9j": {
         "cameraState": {
           "perspective": false,
-          "distance": 79.89004262307034,
-          "phi": 31.32469748471634,
-          "thetaOffset": 104.24341095685327,
+          "distance": 75.89554049203123,
+          "phi": 45.217670494108305,
+          "thetaOffset": 67.70164220755257,
           "targetOffset": [
-            19.822200585161756,
-            4.398481583826052,
-            -1.629859618030202e-15
+            9.60864183022714,
+            5.302787515265507,
+            -2.290271183936789e-16
           ],
           "target": [
             0,
@@ -122,16 +97,20 @@ export const defaultLayout: LayoutData =
           }
         },
         "topics": {
-          "/locator/vehicle_pose": {
-            "visible": true,
-            "showOutlines": false
-          },
-          "/locator/vehicle_pose_org": {
-            "visible": true,
-            "showOutlines": false
-          },
           "/map": {
             "visible": true
+          },
+          "/locator/vehicle_pose": {
+            "visible": true
+          },
+          "/locator/vehicle_pose_org": {
+            "visible": true
+          },
+          "/perception/cam_bcb/image/compressed_org": {
+            "visible": false
+          },
+          "/perception/cam_fcf/image/compressed_org": {
+            "visible": false
           },
           "/perception/fused_objects": {
             "visible": true
@@ -143,8 +122,7 @@ export const defaultLayout: LayoutData =
             "visible": true,
             "colorField": "distance",
             "colorMode": "colormap",
-            "colorMap": "rainbow",
-            "stixelsEnabled": false
+            "colorMap": "rainbow"
           },
           "/perception/perception_gates": {
             "visible": true
@@ -161,22 +139,23 @@ export const defaultLayout: LayoutData =
           "/perception/predicted_objects_org": {
             "visible": true
           },
-          "/planning/planning_visualization": {
-            "visible": true
-          },
-          "/planning/planning_visualization_org": {
-            "visible": true
-          },
-          "/task_manager/task_path": {
-            "visible": true
-          },
           "/planning/planning_visualization/base": {
             "visible": true
           },
           "/planning/planning_visualization_org/base": {
             "visible": true
+          },
+          "/task_manager/task_path": {
+            "visible": true
+          },
+          "/utosim/trailer/pose": {
+            "visible": true
+          },
+          "/utosim/trailer/pose_org": {
+            "visible": true
           }
         },
+        "layers": {},
         "publish": {
           "type": "point",
           "poseTopic": "/move_base_simple/goal",
@@ -188,6 +167,56 @@ export const defaultLayout: LayoutData =
         },
         "imageMode": {},
         "followTf": "EGO"
+      },
+      "RawMessages!2gb4krm": {
+        "diffEnabled": false,
+        "diffMethod": "custom",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "topicPath": "/planning/planning_result.old_control_command"
+      },
+      "Table!oldmmq": {
+        "topicPath": "/utosim/agent_service_info"
+      },
+      "RosOut!3ag34y6": {
+        "searchTerms": [],
+        "minLogLevel": 1
+      },
+      "StateTransitions!16nc52k": {
+        "paths": [
+          {
+            "value": "/utosim/dashboard.drive_info.drive_mode",
+            "timestampMethod": "receiveTime"
+          }
+        ],
+        "isSynced": true
+      },
+      "Tab!kijew7": {
+        "activeTabIdx": 0,
+        "tabs": [
+          {
+            "title": "3D Viz",
+            "layout": "3D!mm4c9j"
+          },
+          {
+            "title": "Dev Debug",
+            "layout": {
+              "first": "RawMessages!2gb4krm",
+              "second": {
+                "first": "Table!oldmmq",
+                "second": {
+                  "first": "RosOut!3ag34y6",
+                  "second": "StateTransitions!16nc52k",
+                  "direction": "column",
+                  "splitPercentage": 77.04347826086956
+                },
+                "direction": "column"
+              },
+              "direction": "row",
+              "splitPercentage": 31.68762483472586
+            }
+          }
+        ]
       },
       "Image!3mnp456": {
         "cameraState": {
@@ -242,12 +271,7 @@ export const defaultLayout: LayoutData =
       "speed": 1
     },
     "layout": {
-      "first": {
-        "first": "BaseInfo!w6nnsu",
-        "second": "3D!18i6zy7",
-        "direction": "row",
-        "splitPercentage": 23.3322102425876
-      },
+      "first": "Tab!kijew7",
       "second": {
         "first": "Image!3mnp456",
         "second": {
@@ -257,9 +281,9 @@ export const defaultLayout: LayoutData =
           "splitPercentage": 63.17991631799165
         },
         "direction": "column",
-        "splitPercentage": 18.983050847457626
+        "splitPercentage": 19.915254237288135
       },
       "direction": "row",
-      "splitPercentage": 65.74292452830188
+      "splitPercentage": 69.13730255164035
     }
   } as const);
