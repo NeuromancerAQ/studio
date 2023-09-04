@@ -32,19 +32,19 @@ const gearObject = {
 };
 const gearList = Object.values(gearObject);
 
-const behavior_typeTxt: any = {
-  '0': "INVALID",
-  '1': "LANE_KEEP",
-  '20': "BREAKTHROUGH",
-  '31': "LEFT_LANE_CHANGE_PREPARE",
-  '32': "RIGHT_LANE_CHANGE_PREPARE",
-  '41': "LEFT_LANE_CHANGE",
-  '42': "RIGHT_LANE_CHANGE",
-  '51': "LEFT_LANE_CHANGE_HOLD",
-  '52': "RIGHT_LANE_CHANGE_HOLD",
-  '61': "LEFT_LANE_CHANGE_CANCEL",
-  '62': "RIGHT_LANE_CHANGE_CANCEL",
-};
+// const behavior_typeTxt: any = {
+//   '0': "INVALID",
+//   '1': "LANE_KEEP",
+//   '20': "BREAKTHROUGH",
+//   '31': "LEFT_LANE_CHANGE_PREPARE",
+//   '32': "RIGHT_LANE_CHANGE_PREPARE",
+//   '41': "LEFT_LANE_CHANGE",
+//   '42': "RIGHT_LANE_CHANGE",
+//   '51': "LEFT_LANE_CHANGE_HOLD",
+//   '52': "RIGHT_LANE_CHANGE_HOLD",
+//   '61': "LEFT_LANE_CHANGE_CANCEL",
+//   '62': "RIGHT_LANE_CHANGE_CANCEL",
+// };
 
 const desiredGearTxt = [
   "GEAR_ERROR",
@@ -148,7 +148,7 @@ function Dashboard(): JSX.Element {
       }
 
     if(firstCachedMessage.drive_info) {
-      metaMessage.drive_info.euler_angle = round(Number(firstCachedMessage.drive_info.euler_angle), 1)
+      metaMessage.drive_info.euler_angle = round(Number(firstCachedMessage.drive_info.euler_angle * (180 / Math.PI)), 1)
       metaMessage.drive_info.steering_wheel_angle = round(Number(firstCachedMessage.drive_info.steering_wheel_angle), 1)
       metaMessage.drive_info.trailer_transfer = round(Number(firstCachedMessage.drive_info.trailer_transfer), 3)
       metaMessage.drive_info.acc_y = round(Number(firstCachedMessage.drive_info.acc_y), 3)
@@ -260,7 +260,7 @@ function Dashboard(): JSX.Element {
               <div className={"tadviz-row"}>
                 <div className={"tadviz-label"}>换道信息</div>
                 <div className={"tadviz-value"}>
-                  { behavior_typeTxt[String(vehicleInfo.behavior_type)] || "N/A" }
+                  { vehicleInfo.behavior_type || "N/A" }
                 </div>
               </div>
             </div>
