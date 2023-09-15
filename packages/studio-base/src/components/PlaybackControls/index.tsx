@@ -252,7 +252,9 @@ export default function PlaybackControls(props: {
               title="Seek backward"
               icon={<Previous20Regular />}
               activeIcon={<Previous20Filled />}
-              onClick={() => seekBackwardAction()}
+              onClick={() => {
+                seekBackwardAction();
+              }}
             />
             <HoverableIconButton
               disabled={disableControls}
@@ -268,7 +270,9 @@ export default function PlaybackControls(props: {
               title="Seek forward"
               icon={<Next20Regular />}
               activeIcon={<Next20Filled />}
-              onClick={() => seekForwardAction()}
+              onClick={() => {
+                seekForwardAction();
+              }}
             />
           </Stack>
           <Stack direction="row" flex={1} alignItems="center" justifyContent="flex-end" gap={0.5}>

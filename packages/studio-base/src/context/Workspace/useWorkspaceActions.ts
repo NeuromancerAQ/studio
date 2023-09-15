@@ -3,11 +3,12 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import { Draft, produce } from "immer";
-import { union } from "lodash";
+import * as _ from "lodash-es";
 import { Dispatch, SetStateAction, useCallback, useMemo } from "react";
 import { useMountedState } from "react-use";
 
 import { useGuaranteedContext } from "@foxglove/hooks";
+import { Immutable } from "@foxglove/studio";
 import { AppSettingsTab } from "@foxglove/studio-base/components/AppSettingsDialog/AppSettingsDialog";
 import { DataSourceDialogItem } from "@foxglove/studio-base/components/DataSourceDialog";
 import { useAnalytics } from "@foxglove/studio-base/context/AnalyticsContext";
@@ -32,6 +33,7 @@ import {
   LeftSidebarItemKeys,
   RightSidebarItemKey,
   RightSidebarItemKeys,
+  SessionProblem,
 } from "./WorkspaceContext";
 import { useOpenFile } from "./useOpenFile";
 
@@ -59,6 +61,11 @@ export type WorkspaceActions = {
 
   playbackControlActions: {
     setRepeat: Dispatch<SetStateAction<boolean>>;
+  };
+
+  sessionActions: {
+    clearProblem: (tag: string) => void;
+    setProblem: (tag: string, problem: Immutable<SessionProblem>) => void;
   };
 
   sidebarActions: {
@@ -215,10 +222,11 @@ export function useWorkspaceActions(): WorkspaceActions {
         },
 
         preferences: {
-          close: () =>
+          close: () => {
             set((draft) => {
               draft.dialogs.preferences = { open: false, initialTab: undefined };
-            }),
+            });
+          },
           open: (initialTab?: AppSettingsTab) => {
             set((draft) => {
               draft.dialogs.preferences = { open: true, initialTab };
@@ -236,22 +244,38 @@ export function useWorkspaceActions(): WorkspaceActions {
         finishTour: (tour: string) => {
           set((draft) => {
             draft.featureTours.active = undefined;
-            draft.featureTours.shown = union(draft.featureTours.shown, [tour]);
+            draft.featureTours.shown = _.union(draft.featureTours.shown, [tour]);
           });
         },
       },
 
-      openPanelSettings: () =>
+      openPanelSettings: () => {
         set((draft) => {
           draft.sidebars.left.item = "panel-settings";
           draft.sidebars.left.open = true;
-        }),
+        });
+      },
 
       playbackControlActions: {
         setRepeat: (setter: SetStateAction<boolean>) => {
           set((draft) => {
             const repeat = setterValue(setter, draft.playbackControls.repeat);
             draft.playbackControls.repeat = repeat;
+          });
+        },
+      },
+
+      sessionActions: {
+        clearProblem: (tag: string) => {
+          set((draft) => {
+            draft.session.problems = draft.session.problems.filter((prob) => prob.tag !== tag);
+          });
+        },
+
+        setProblem: (tag: string, problem: Immutable<SessionProblem>) => {
+          set((draft) => {
+            draft.session.problems = draft.session.problems.filter((prob) => prob.tag !== tag);
+            draft.session.problems.unshift(problem);
           });
         },
       },
@@ -280,10 +304,11 @@ export function useWorkspaceActions(): WorkspaceActions {
             });
           },
 
-          setSize: (leftSidebarSize: undefined | number) =>
+          setSize: (leftSidebarSize: undefined | number) => {
             set((draft) => {
               draft.sidebars.left.size = leftSidebarSize;
-            }),
+            });
+          },
         },
         right: {
           selectItem: (selectedRightSidebarItem: undefined | RightSidebarItemKey) => {
@@ -308,10 +333,11 @@ export function useWorkspaceActions(): WorkspaceActions {
             });
           },
 
-          setSize: (rightSidebarSize: undefined | number) =>
+          setSize: (rightSidebarSize: undefined | number) => {
             set((draft) => {
               draft.sidebars.right.size = rightSidebarSize;
-            }),
+            });
+          },
         },
       },
 

@@ -8,10 +8,6 @@
 // See typings/index.d.ts for additional included references
 /// <reference types="./typings" />
 
-export {
-  default as DialogHostIdContext,
-  useDialogHostId,
-} from "@foxglove/studio-base/context/DialogHostIdContext";
 export { App } from "./App";
 export type { NetworkInterface, OsContext } from "./OsContext";
 export type {
@@ -46,3 +42,4 @@ export { default as McapLocalDataSourceFactory } from "./dataSources/McapLocalDa
 export { default as SampleNuscenesDataSourceFactory } from "./dataSources/SampleNuscenesDataSourceFactory";
 export { LaunchPreferenceValue } from "@foxglove/studio-base/types/LaunchPreferenceValue";
 export { reportError, setReportErrorHandler } from "./reportError";
+export { makeWorkspaceContextInitialState } from "./providers/WorkspaceContextProvider";

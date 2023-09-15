@@ -112,6 +112,13 @@ export const getBuiltin: (t: TFunction<"panels">) => PanelInfo[] = (t) => [
     module: async () => await import("./Publish"),
   },
   {
+    title: t("callService"),
+    type: "CallService",
+    description: t("callServiceDescription"),
+    thumbnail: publishThumbnail,
+    module: async () => await import("./CallService"),
+  },
+  {
     title: t("rawMessages"),
     type: "RawMessages",
     description: t("rawMessagesDescription"),
@@ -125,7 +132,6 @@ export const getBuiltin: (t: TFunction<"panels">) => PanelInfo[] = (t) => [
     description: t("logDescription"),
     thumbnail: logThumbnail,
     module: async () => await import("./Log"),
-    hasCustomToolbar: true,
   },
   {
     title: t("stateTransitions"),

@@ -7,6 +7,8 @@ import { TypeOptions } from "i18next";
 export const panels: Partial<TypeOptions["resources"]["panels"]> = {
   "3D": "三维",
   "3DPanelDescription": "在三维场景中显示标记、相机图像、网格、URDF 和其他内容。",
+  callService: "调用服务",
+  callServiceDescription: "调用服务并查看服务调用结果。",
   dataSourceInfo: "数据源信息",
   dataSourceInfoDescription: "查看当前数据源的主题和时间戳等详细信息。",
   gauge: "仪表",
@@ -14,7 +16,6 @@ export const panels: Partial<TypeOptions["resources"]["panels"]> = {
   dashboard: "仪表盘",
   dashboardDescription: "显示当前车辆信息的仪表盘",
   image: "图像",
-  imageLegacy: "图像（Legacy）",
   imageDescription: "显示带注释的图像。",
   indicator: "指示器",
   indicatorDescription: "基于阈值值显示彩色和/或文本指示器。",

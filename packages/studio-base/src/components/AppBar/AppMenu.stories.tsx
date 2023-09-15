@@ -5,6 +5,7 @@
 import { PopoverPosition, PopoverReference } from "@mui/material";
 import { Meta, StoryObj } from "@storybook/react";
 import { userEvent, within } from "@storybook/testing-library";
+import * as _ from "lodash-es";
 
 import { AppBarMenuItem } from "@foxglove/studio-base/components/AppBar/types";
 import { AppContext } from "@foxglove/studio-base/context/AppContext";
@@ -35,12 +36,10 @@ export default {
     anchorPosition: { top: 0, left: 0 },
     anchorReference: "anchorPosition",
     disablePortal: true,
-    handleClose: () => {
-      // no-op
-    },
+    handleClose: _.noop,
   },
   decorators: [
-    (Story, { args: { testId: _, ...args } }): JSX.Element => (
+    (Story, { args: { testId: _testId, ...args } }): JSX.Element => (
       <AppContext.Provider value={{ appBarMenuItems: args.appBarMenuItems }}>
         <MockCurrentLayoutProvider>
           <WorkspaceContextProvider>
