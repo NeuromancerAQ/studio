@@ -1,6 +1,6 @@
 import { formatTime2 } from "@foxglove/studio-base/util/utoUtil"
 import {isNumber} from "lodash"
-const formatTime = (value) => {
+const formatTime = (value: bigint | number) => {
   if (isNumber(value)) {
     return formatTime2(value)
   } else if (typeof(value) === 'bigint') {

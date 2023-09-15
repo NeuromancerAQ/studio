@@ -34,6 +34,6 @@ export type MessagePipelineContext = Immutable<{
   seekPlayback?: (time: Time) => void;
   // Don't render the next frame until the returned function has been called.
   pauseFrame: (name: string) => ResumeFrame;
-  seekForward?: () => void;
-  seekBackward?: () => void;
+  seekForward?: () => void | undefined;
+  seekBackward?: () => void | undefined;
 }>;

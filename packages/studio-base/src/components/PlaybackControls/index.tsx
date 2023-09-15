@@ -53,7 +53,6 @@ import { Player, PlayerPresence } from "@foxglove/studio-base/players/types";
 import PlaybackTimeDisplay from "./PlaybackTimeDisplay";
 import { RepeatAdapter } from "./RepeatAdapter";
 import Scrubber from "./Scrubber";
-import { DIRECTION, jumpSeek } from "./sharedHelpers";
 
 const useStyles = makeStyles()((theme) => ({
   root: {
@@ -86,13 +85,13 @@ export default function PlaybackControls(props: {
   play: NonNullable<Player["startPlayback"]>;
   pause: NonNullable<Player["pausePlayback"]>;
   seek: NonNullable<Player["seekPlayback"]>;
-  seekForward: NonNullable<Player["seekForward"]>;
-  seekBackward: NonNullable<Player["seekBackward"]>;
+  seekForward: NonNullable<Player["seekForward"]> | undefined;
+  seekBackward: NonNullable<Player["seekBackward"]> | undefined;
   playUntil?: Player["playUntil"];
   isPlaying: boolean;
   getTimeInfo: () => { startTime?: Time; endTime?: Time; currentTime?: Time };
 }): JSX.Element {
-  const { play, pause, seek, isPlaying, getTimeInfo, playUntil, seekForward, seekBackward } = props;
+  const { play, pause, seek, isPlaying, getTimeInfo, seekForward, seekBackward } = props;
   const presence = useMessagePipeline(selectPresence);
 
   const { classes, cx } = useStyles();
@@ -151,12 +150,13 @@ export default function PlaybackControls(props: {
 
   const seekForwardAction = useCallback(
     (ev?: KeyboardEvent) => {
+      console.log(ev);
       const { currentTime } = getTimeInfo();
       if (!currentTime) {
         return;
       }
 
-      seekForward()
+      seekForward && seekForward()
     },
     [getTimeInfo, seekForward],
   );
@@ -174,11 +174,12 @@ export default function PlaybackControls(props: {
 
   const seekBackwardAction = useCallback(
     (ev?: KeyboardEvent) => {
+      console.log(ev);
       const { currentTime } = getTimeInfo();
       if (!currentTime) {
         return;
       }
-      seekBackward()
+      seekBackward && seekBackward()
     },
     [getTimeInfo, seekBackward],
   );

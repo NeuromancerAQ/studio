@@ -206,12 +206,12 @@ export default function Slider(props: Props): JSX.Element {
     >
       {renderSlider(fraction, classes.range)}
       {
-        A2M.map(val => {
+        A2M.map((val: number | undefined) => {
           return RenderItem(val, classes.markerA2M)
         })
       }
       {
-        M2A.map(val => {
+        M2A.map((val: number | undefined) => {
           return RenderItem(val, classes.markerM2A)
         })
       }

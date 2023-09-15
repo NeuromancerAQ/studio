@@ -22,35 +22,35 @@ const useStyles = makeStyles()({
   },
 });
 
-const getDataValueByFieldName = (data: unknown, path: string) => {
-  if (!data || !path || typeof path !== "string") {
-    return "N/A";
-  }
-  const keys = path.split(".");
-  keys.shift();
-  if (!keys.length) {
-    return "N/A";
-  }
-  let copyData: unknown = data;
-  for (let i = 0; i < keys.length; i++) {
-    let key = keys[i];
-    if (Array.isArray(copyData)) {
-      if (/^\[\d{1,}\]$/.test(key)) {
-        key = key.substring(1, key.length - 1);
-      } else {
-        copyData = copyData[0];
-      }
-    }
-    if (copyData && copyData[key] !== undefined) {
-      copyData = copyData[key];
-    } else {
-      copyData = "N/A";
-      break;
-    }
-  }
-
-  return copyData;
-}
+// const getDataValueByFieldName = (data: unknown, path: string) => {
+//   if (!data || !path || typeof path !== "string") {
+//     return "N/A";
+//   }
+//   const keys = path.split(".");
+//   keys.shift();
+//   if (!keys.length) {
+//     return "N/A";
+//   }
+//   let copyData: unknown = data;
+//   for (let i = 0; i < keys.length; i++) {
+//     let key = keys[i];
+//     if (Array.isArray(copyData)) {
+//       if (/^\[\d{1,}\]$/.test(key)) {
+//         key = key.substring(1, key.length - 1);
+//       } else {
+//         copyData = copyData[0];
+//       }
+//     }
+//     if (copyData && copyData[key] !== undefined) {
+//       copyData = copyData[key];
+//     } else {
+//       copyData = "N/A";
+//       break;
+//     }
+//   }
+//
+//   return copyData;
+// }
 
 function BaseInfo(): JSX.Element {
   const { classes } = useStyles();

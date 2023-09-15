@@ -222,47 +222,47 @@ export function AppMenu(props: AppMenuProps): JSX.Element {
 
   // HELP
 
-  const onAboutClick = useCallback(() => {
-    dialogActions.preferences.open("about");
-    handleAnalytics("about");
-    handleNestedMenuClose();
-  }, [dialogActions.preferences, handleAnalytics, handleNestedMenuClose]);
+  // const onAboutClick = useCallback(() => {
+  //   dialogActions.preferences.open("about");
+  //   handleAnalytics("about");
+  //   handleNestedMenuClose();
+  // }, [dialogActions.preferences, handleAnalytics, handleNestedMenuClose]);
+  //
+  // const onDocsClick = useCallback(() => {
+  //   handleAnalytics("docs");
+  //   window.open("https://foxglove.dev/docs", "_blank");
+  //   handleNestedMenuClose();
+  // }, [handleAnalytics, handleNestedMenuClose]);
+  //
+  // const onSlackClick = useCallback(() => {
+  //   handleAnalytics("join-slack");
+  //   window.open("https://foxglove.dev/slack", "_blank");
+  //   handleNestedMenuClose();
+  // }, [handleAnalytics, handleNestedMenuClose]);
+  //
+  // const onDemoClick = useCallback(() => {
+  //   dialogActions.dataSource.open("demo");
+  //   handleAnalytics("demo");
+  //   handleNestedMenuClose();
+  // }, [dialogActions.dataSource, handleAnalytics, handleNestedMenuClose]);
 
-  const onDocsClick = useCallback(() => {
-    handleAnalytics("docs");
-    window.open("https://foxglove.dev/docs", "_blank");
-    handleNestedMenuClose();
-  }, [handleAnalytics, handleNestedMenuClose]);
-
-  const onSlackClick = useCallback(() => {
-    handleAnalytics("join-slack");
-    window.open("https://foxglove.dev/slack", "_blank");
-    handleNestedMenuClose();
-  }, [handleAnalytics, handleNestedMenuClose]);
-
-  const onDemoClick = useCallback(() => {
-    dialogActions.dataSource.open("demo");
-    handleAnalytics("demo");
-    handleNestedMenuClose();
-  }, [dialogActions.dataSource, handleAnalytics, handleNestedMenuClose]);
-
-  const helpItems = useMemo<AppBarMenuItem[]>(
-    () => [
-      { type: "item", key: "about", label: t("about"), onClick: onAboutClick },
-      { type: "divider" },
-      { type: "item", key: "docs", label: t("viewOurDocs"), onClick: onDocsClick, external: true },
-      {
-        type: "item",
-        key: "join-slack",
-        label: t("joinOurSlack"),
-        onClick: onSlackClick,
-        external: true,
-      },
-      { type: "divider" },
-      { type: "item", key: "demo", label: t("exploreSampleData"), onClick: onDemoClick },
-    ],
-    [onAboutClick, onDemoClick, onDocsClick, onSlackClick, t],
-  );
+  // const helpItems = useMemo<AppBarMenuItem[]>(
+  //   () => [
+  //     { type: "item", key: "about", label: t("about"), onClick: onAboutClick },
+  //     { type: "divider" },
+  //     { type: "item", key: "docs", label: t("viewOurDocs"), onClick: onDocsClick, external: true },
+  //     {
+  //       type: "item",
+  //       key: "join-slack",
+  //       label: t("joinOurSlack"),
+  //       onClick: onSlackClick,
+  //       external: true,
+  //     },
+  //     { type: "divider" },
+  //     { type: "item", key: "demo", label: t("exploreSampleData"), onClick: onDemoClick },
+  //   ],
+  //   [onAboutClick, onDemoClick, onDocsClick, onSlackClick, t],
+  // );
 
   return (
     <>
