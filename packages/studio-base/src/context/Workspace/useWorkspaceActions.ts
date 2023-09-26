@@ -8,7 +8,6 @@ import { Dispatch, SetStateAction, useCallback, useMemo } from "react";
 import { useMountedState } from "react-use";
 
 import { useGuaranteedContext } from "@foxglove/hooks";
-import { Immutable } from "@foxglove/studio";
 import { AppSettingsTab } from "@foxglove/studio-base/components/AppSettingsDialog/AppSettingsDialog";
 import { DataSourceDialogItem } from "@foxglove/studio-base/components/DataSourceDialog";
 import { useAnalytics } from "@foxglove/studio-base/context/AnalyticsContext";
@@ -27,13 +26,12 @@ import { downloadTextFile } from "@foxglove/studio-base/util/download";
 import { defaultLayout } from "@foxglove/studio-base/providers/CurrentLayoutProvider/defaultLayout";
 
 import {
-  WorkspaceContext,
-  WorkspaceContextStore,
   LeftSidebarItemKey,
   LeftSidebarItemKeys,
   RightSidebarItemKey,
   RightSidebarItemKeys,
-  SessionProblem,
+  WorkspaceContext,
+  WorkspaceContextStore,
 } from "./WorkspaceContext";
 import { useOpenFile } from "./useOpenFile";
 
@@ -61,11 +59,6 @@ export type WorkspaceActions = {
 
   playbackControlActions: {
     setRepeat: Dispatch<SetStateAction<boolean>>;
-  };
-
-  sessionActions: {
-    clearProblem: (tag: string) => void;
-    setProblem: (tag: string, problem: Immutable<SessionProblem>) => void;
   };
 
   sidebarActions: {
@@ -261,21 +254,6 @@ export function useWorkspaceActions(): WorkspaceActions {
           set((draft) => {
             const repeat = setterValue(setter, draft.playbackControls.repeat);
             draft.playbackControls.repeat = repeat;
-          });
-        },
-      },
-
-      sessionActions: {
-        clearProblem: (tag: string) => {
-          set((draft) => {
-            draft.session.problems = draft.session.problems.filter((prob) => prob.tag !== tag);
-          });
-        },
-
-        setProblem: (tag: string, problem: Immutable<SessionProblem>) => {
-          set((draft) => {
-            draft.session.problems = draft.session.problems.filter((prob) => prob.tag !== tag);
-            draft.session.problems.unshift(problem);
           });
         },
       },

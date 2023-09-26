@@ -30,7 +30,7 @@ import {
   TypedData,
   Messages,
 } from "./internalTypes";
-import { isSingleMessage, isBounded, getParamPaths, getParamTopics } from "./params";
+import { isSingleMessage, getParamPaths, getParamTopics } from "./params";
 import {
   buildPlotData,
   resolvePath,
@@ -195,10 +195,7 @@ function getClientData(client: Client): PlotData | undefined {
   const { bounds: currentBounds } = currentData;
 
   let datasets: PlotData[] = [];
-  if (isSingleMessage(params) || isBounded(params)) {
-    // bounded and single-message plots _only_ use current data
-    datasets = [currentData];
-  } else if (blockBounds.x.min <= currentBounds.x.min && blockBounds.x.max > currentBounds.x.max) {
+  if (blockBounds.x.min <= currentBounds.x.min && blockBounds.x.max > currentBounds.x.max) {
     // ignore current data if block data covers it already
     datasets = [blockData];
   } else {
@@ -277,6 +274,7 @@ function setLive(value: boolean): void {
 function unregister(id: string): void {
   const { [id]: _client, ...rest } = clients;
   clients = rest;
+  evictCache();
 }
 
 function receiveMetadata(topics: readonly Topic[], datatypes: Immutable<RosDatatypes>): void {
@@ -379,8 +377,6 @@ function addBlock(block: Messages, resetTopics: string[]): void {
     });
     client.queueRebuild();
   }
-
-  evictCache();
 }
 
 function clearCurrent(): void {
