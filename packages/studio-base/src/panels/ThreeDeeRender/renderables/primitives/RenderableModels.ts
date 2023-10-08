@@ -77,8 +77,9 @@ export class RenderableModels extends RenderablePrimitive {
       this.#updateModel(renderable, primitive);
       return renderable;
     }
-
-    const url = getURL(primitive);
+    // 临时模型的URL替换
+    const url = getURL(primitive).replace('http://36.99.116.62:30878', window.location.origin);
+    console.log(url, 'url');
     try {
       // Load the model if necessary
       const cachedModel = await this.#loadCachedModel(url, {

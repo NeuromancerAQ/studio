@@ -4,11 +4,16 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="1bbdf6bf-8050-496f-8f5b-110730051634" name="Default Changelist" comment="feat: 替换desktop icon">
+    <list default="true" id="1bbdf6bf-8050-496f-8f5b-110730051634" name="Default Changelist" comment="feat: 取消自动更新，取消dev控制台，解除报错">
+      <change afterPath="$PROJECT_DIR$/packages/studio-web/public/module/9m6.glb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/studio-web/public/module/aiv.glb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/studio-web/public/module/cone.glb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/studio-web/public/module/dt64_tractor.glb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/studio-web/public/module/dt64_trailer.glb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/studio-web/public/module/gt_tractor.glb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/studio-web/public/module/gt_trailer.glb" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/desktop/renderer/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/desktop/renderer/index.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/packages/studio-base/src/panels/BaseInfo/info.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/studio-base/src/panels/BaseInfo/info.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yarn.lock" beforeDir="false" afterPath="$PROJECT_DIR$/yarn.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/studio-base/src/panels/ThreeDeeRender/renderables/primitives/RenderableModels.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/studio-base/src/panels/ThreeDeeRender/renderables/primitives/RenderableModels.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -92,7 +97,7 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "WebServerToolWindowFactoryState": "false",
     "git-widget-placeholder": "uto-studio",
-    "last_opened_file_path": "C:/Project/coconut",
+    "last_opened_file_path": "C:/Project/studio/packages/studio-base",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.standard": "true",
     "node.js.detected.package.tslint": "true",
@@ -107,13 +112,15 @@
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Project\studio\packages\studio-base" />
+      <recent name="C:\Project\studio" />
       <recent name="C:\Project\studio\packages\studio-desktop\resources\icon" />
       <recent name="C:\Project\studio\packages\studio-base\src\panels\BaseInfo" />
       <recent name="C:\Project\studio\packages\studio-base\src\panels\StPoligonGraph" />
-      <recent name="C:\Project\studio\packages\studio-base\src\panels\Dashboard" />
-      <recent name="C:\Project\studio\packages\studio-base\src\assets\img" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Project\studio\packages\studio-web\public" />
+      <recent name="C:\Project\studio\web" />
       <recent name="C:\Project\studio\packages\studio-base\pubic" />
       <recent name="C:\Project\studio\packages\studio-base" />
     </key>
@@ -192,6 +199,8 @@
       <workItem from="1695652989949" duration="321000" />
       <workItem from="1695653325718" duration="85000" />
       <workItem from="1695687883940" duration="2578000" />
+      <workItem from="1695704952295" duration="917000" />
+      <workItem from="1696732287735" duration="4156000" />
     </task>
     <task id="LOCAL-00001" summary="feat: dashboard">
       <created>1686554618371</created>
@@ -403,7 +412,15 @@
       <option name="project" value="LOCAL" />
       <updated>1695630107671</updated>
     </task>
-    <option name="localTasksCounter" value="30" />
+    <task id="LOCAL-00030" summary="feat: 取消自动更新，取消dev控制台，解除报错">
+      <option name="closed" value="true" />
+      <created>1695696478455</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1695696478455</updated>
+    </task>
+    <option name="localTasksCounter" value="31" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -492,6 +509,7 @@
     <MESSAGE value="feat: 更新yarn.lock" />
     <MESSAGE value="feat: 修复ts 报错" />
     <MESSAGE value="feat: 替换desktop icon" />
-    <option name="LAST_COMMIT_MESSAGE" value="feat: 替换desktop icon" />
+    <MESSAGE value="feat: 取消自动更新，取消dev控制台，解除报错" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat: 取消自动更新，取消dev控制台，解除报错" />
   </component>
 </project>
