@@ -9,7 +9,7 @@ import { useAppConfigurationValue } from "@foxglove/studio-base/hooks";
 import ThemeProvider from "@foxglove/studio-base/theme/ThemeProvider";
 
 export function ColorSchemeThemeProvider({ children }: React.PropsWithChildren): JSX.Element {
-  const [colorScheme = "system"] = useAppConfigurationValue<string>(AppSetting.COLOR_SCHEME);
+  const [colorScheme = "dark"] = useAppConfigurationValue<string>(AppSetting.COLOR_SCHEME);
   const systemSetting = useMedia("(prefers-color-scheme: dark)");
   const isDark = colorScheme === "dark" || (colorScheme === "system" && systemSetting);
   return <ThemeProvider isDark={isDark}>{children}</ThemeProvider>;
