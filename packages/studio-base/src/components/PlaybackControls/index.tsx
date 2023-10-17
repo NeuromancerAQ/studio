@@ -53,6 +53,7 @@ import { Player, PlayerPresence } from "@foxglove/studio-base/players/types";
 import PlaybackTimeDisplay from "./PlaybackTimeDisplay";
 import { RepeatAdapter } from "./RepeatAdapter";
 import Scrubber from "./Scrubber";
+import { DIRECTION, jumpSeek } from "./sharedHelpers";
 
 const useStyles = makeStyles()((theme) => ({
   root: {
@@ -90,8 +91,10 @@ export default function PlaybackControls(props: {
   playUntil?: Player["playUntil"];
   isPlaying: boolean;
   getTimeInfo: () => { startTime?: Time; endTime?: Time; currentTime?: Time };
+  ds: string | undefined;
 }): JSX.Element {
-  const { play, pause, seek, isPlaying, getTimeInfo, seekForward, seekBackward } = props;
+  const { play, pause, seek, isPlaying, getTimeInfo, playUntil, seekForward, seekBackward, ds } = props;
+  console.log(props);
   const presence = useMessagePipeline(selectPresence);
 
   const { classes, cx } = useStyles();
@@ -121,68 +124,71 @@ export default function PlaybackControls(props: {
     }
   }, [isPlaying, pause, getTimeInfo, play, seek]);
 
-  // const seekForwardAction = useCallback(
-  //   (ev?: KeyboardEvent) => {
-  //     const { currentTime } = getTimeInfo();
-  //     if (!currentTime) {
-  //       return;
-  //     }
-  //
-  //     // If playUntil is available, we prefer to use that rather than seek, which performs a jump
-  //     // seek.
-  //     //
-  //     // Playing forward up to the desired seek time will play all messages to the panels which
-  //     // mirrors the behavior panels would expect when playing without stepping. This behavior is
-  //     // important for some message types which convey state information.
-  //     //
-  //     // i.e. Skipping coordinate frame messages may result in incorrectly rendered markers or
-  //     // missing markers altogther.
-  //     const targetTime = jumpSeek(DIRECTION.FORWARD, currentTime, ev);
-  //
-  //     if (playUntil) {
-  //       playUntil(targetTime);
-  //     } else {
-  //       seek(targetTime);
-  //     }
-  //   },
-  //   [getTimeInfo, playUntil, seek],
-  // );
-
-  const seekForwardAction = useCallback(
+  let seekForwardAction = useCallback(
     (ev?: KeyboardEvent) => {
-      console.log(ev);
       const { currentTime } = getTimeInfo();
       if (!currentTime) {
         return;
       }
 
-      seekForward && seekForward()
+      // If playUntil is available, we prefer to use that rather than seek, which performs a jump
+      // seek.
+      //
+      // Playing forward up to the desired seek time will play all messages to the panels which
+      // mirrors the behavior panels would expect when playing without stepping. This behavior is
+      // important for some message types which convey state information.
+      //
+      // i.e. Skipping coordinate frame messages may result in incorrectly rendered markers or
+      // missing markers altogther.
+      const targetTime = jumpSeek(DIRECTION.FORWARD, currentTime, ev);
+
+      if (playUntil) {
+        playUntil(targetTime);
+      } else {
+        seek(targetTime);
+      }
     },
-    [getTimeInfo, seekForward],
+    [getTimeInfo, playUntil, seek],
   );
 
-  // const seekBackwardAction = useCallback(
-  //   (ev?: KeyboardEvent) => {
-  //     const { currentTime } = getTimeInfo();
-  //     if (!currentTime) {
-  //       return;
-  //     }
-  //     seek(jumpSeek(DIRECTION.BACKWARD, currentTime, ev));
-  //   },
-  //   [getTimeInfo, seek],
-  // );
-
-  const seekBackwardAction = useCallback(
+  let seekBackwardAction = useCallback(
     (ev?: KeyboardEvent) => {
-      console.log(ev);
       const { currentTime } = getTimeInfo();
       if (!currentTime) {
         return;
       }
-      seekBackward && seekBackward()
+      seek(jumpSeek(DIRECTION.BACKWARD, currentTime, ev));
     },
-    [getTimeInfo, seekBackward],
+    [getTimeInfo, seek],
   );
+
+  // websocket 模式下的操作
+  if (ds && ds === 'foxglove-websocket') {
+    seekForwardAction = useCallback(
+      (ev?: KeyboardEvent) => {
+        console.log(ev);
+        const { currentTime } = getTimeInfo();
+        if (!currentTime) {
+          return;
+        }
+
+        seekForward && seekForward()
+      },
+      [getTimeInfo, seekForward],
+    );
+
+    seekBackwardAction = useCallback(
+      (ev?: KeyboardEvent) => {
+        console.log(ev);
+        const { currentTime } = getTimeInfo();
+        if (!currentTime) {
+          return;
+        }
+        seekBackward && seekBackward()
+      },
+      [getTimeInfo, seekBackward],
+    );
+  }
 
   const keyDownHandlers = useMemo(
     () => ({
