@@ -410,8 +410,6 @@ function WorkspaceContent(props: WorkspaceProps): JSX.Element {
     return deepLinks[0] ? parseAppURLState(new URL(deepLinks[0])) : undefined;
   }, [props.deepLinks]);
 
-  console.log(targetUrlState.ds, 'dsdsdssdsds');
-
   const [unappliedSourceArgs, setUnappliedSourceArgs] = useState(
     targetUrlState ? { ds: targetUrlState.ds, dsParams: targetUrlState.dsParams } : undefined,
   );

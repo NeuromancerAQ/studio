@@ -53,6 +53,8 @@ import { Player, PlayerPresence } from "@foxglove/studio-base/players/types";
 import PlaybackTimeDisplay from "./PlaybackTimeDisplay";
 import { RepeatAdapter } from "./RepeatAdapter";
 import Scrubber from "./Scrubber";
+import FailRange from "./FailRange";
+import MetricSelect from "./MetricSelect";
 import { DIRECTION, jumpSeek } from "./sharedHelpers";
 
 const useStyles = makeStyles()((theme) => ({
@@ -94,8 +96,24 @@ export default function PlaybackControls(props: {
   ds: string | undefined;
 }): JSX.Element {
   const { play, pause, seek, isPlaying, getTimeInfo, playUntil, seekForward, seekBackward, ds } = props;
-  console.log(props);
   const presence = useMessagePipeline(selectPresence);
+
+  const rangeType = [
+    {
+      metric: 'MetricOverSpeed',
+      ranges: [{start_s: 16.7, end_s: 21.5}]
+    },
+    {
+      metric: 'MetricRapidAcc',
+      ranges: [{start_s: 20.0, end_s: 25.8}]
+    },
+  ]
+
+  const [range, setRange] = useState([]);
+
+  const handleMetricRange = (ranges) => {
+    setRange(ranges)
+  }
 
   const { classes, cx } = useStyles();
   const repeat = useWorkspaceStore(selectPlaybackRepeat);
@@ -216,6 +234,7 @@ export default function PlaybackControls(props: {
       <KeyListener global keyDownHandlers={keyDownHandlers} />
       <div className={classes.root}>
         <Scrubber onSeek={seek} />
+        <FailRange range={range} />
         <Stack direction="row" alignItems="center" flex={1} gap={1} overflowX="auto">
           <Stack direction="row" flex={1} gap={0.5}>
             {currentUser && eventsSupported && (
@@ -251,6 +270,7 @@ export default function PlaybackControls(props: {
               />
             </Tooltip>
             <PlaybackTimeDisplay onSeek={seek} onPause={pause} />
+            <MetricSelect handleMetricRange={handleMetricRange} rangeType={rangeType} />
           </Stack>
           <Stack direction="row" alignItems="center" gap={1}>
             <HoverableIconButton
