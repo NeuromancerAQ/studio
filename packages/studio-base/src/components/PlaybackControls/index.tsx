@@ -56,6 +56,7 @@ import Scrubber from "./Scrubber";
 import FailRange from "./FailRange";
 import MetricSelect from "./MetricSelect";
 import { DIRECTION, jumpSeek } from "./sharedHelpers";
+import json from "./grading.json";
 
 const useStyles = makeStyles()((theme) => ({
   root: {
@@ -98,16 +99,8 @@ export default function PlaybackControls(props: {
   const { play, pause, seek, isPlaying, getTimeInfo, playUntil, seekForward, seekBackward, ds } = props;
   const presence = useMessagePipeline(selectPresence);
 
-  const rangeType = [
-    {
-      metric: 'MetricOverSpeed',
-      ranges: [{start_s: 16.7, end_s: 21.5}]
-    },
-    {
-      metric: 'MetricRapidAcc',
-      ranges: [{start_s: 20.0, end_s: 25.8}]
-    },
-  ]
+  const rangeType = json.metrics
+  const total = json.total_time
 
   const [range, setRange] = useState([]);
 
@@ -234,7 +227,7 @@ export default function PlaybackControls(props: {
       <KeyListener global keyDownHandlers={keyDownHandlers} />
       <div className={classes.root}>
         <Scrubber onSeek={seek} />
-        <FailRange range={range} />
+        <FailRange range={range} total={total} />
         <Stack direction="row" alignItems="center" flex={1} gap={1} overflowX="auto">
           <Stack direction="row" flex={1} gap={0.5}>
             {currentUser && eventsSupported && (

@@ -8,12 +8,12 @@ type Range = {
 }
 
 type Props = {
-  range: Range[]
+  range: Range[],
+  total: number
 };
 
 export default function FailRang (props: Props): JSX.Element {
-  const total = 59.75
-  const { range } = props
+  const { total, range } = props
 
   return (
     <div style={{

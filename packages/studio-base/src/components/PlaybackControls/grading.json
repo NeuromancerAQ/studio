@@ -1,0 +1,95 @@
+{
+    "total_time": 199,
+    "metrics": [
+        {
+            "description": "预测轨迹线效果评测",
+            "metric": "MetricPreTraject",
+            "ranges": [
+                {
+                    "end_s": 82.7,
+                    "start_s": 0.1
+                }
+            ]
+        },
+        {
+            "description": "距离终点的剩余距离",
+            "metric": "MetricDisCheck",
+            "ranges": [
+                {
+                    "end_s": 199,
+                    "start_s": 198.9
+                }
+            ]
+        },
+        {
+            "description": "强制换道区域检测",
+            "metric": "MetricLaneChgSafety",
+            "ranges": [
+                {
+                    "end_s": 199,
+                    "start_s": 0
+                }
+            ]
+        },
+        {
+            "description": "至freespace点的最近距离",
+            "metric": "MetricFreespaceDis",
+            "ranges": [
+                {
+                    "end_s": 38.7,
+                    "start_s": 23.200000000000003
+                }
+            ]
+        },
+        {
+            "description": "停在终点区域",
+            "metric": "MetricStopInDestination",
+            "ranges": [
+                {
+                    "end_s": 114.5,
+                    "start_s": 0
+                }
+            ]
+        },
+        {
+            "description": "异常低速行驶",
+            "metric": "MetricUnderSpeed",
+            "ranges": [
+                {
+                    "end_s": 199,
+                    "start_s": 10.600000000000001
+                }
+            ]
+        },
+        {
+            "description": "是否发生换道撤回",
+            "metric": "MetricLaneChgCancel",
+            "ranges": [
+                {
+                    "end_s": 199,
+                    "start_s": 0
+                }
+            ]
+        },
+        {
+            "description": "ELV纵向距离检测",
+            "metric": "MetricElvVerticalDis",
+            "ranges": [
+                {
+                    "end_s": 199,
+                    "start_s": 0
+                }
+            ]
+        },
+        {
+            "description": "存在 nudge 行为",
+            "metric": "MetricNudgeExit",
+            "ranges": [
+                {
+                    "end_s": 199,
+                    "start_s": 0
+                }
+            ]
+        }
+    ]
+}
