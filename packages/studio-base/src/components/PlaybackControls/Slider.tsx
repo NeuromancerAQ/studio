@@ -76,11 +76,11 @@ function defaultRenderSlider(value: number | undefined, className: string): Reac
   return <div className={className} style={{ width: `${value * 100}%` }} />;
 }
 
-function RenderItem(value: number | undefined, className: string): ReactNode {
+function RenderItem(value: number | undefined, className: string, index: number): ReactNode {
   if (value == undefined || isNaN(value)) {
     return ReactNull;
   }
-  return <div className={className} style={{ left: `${value * 100}%` }} />;
+  return <div className={className} key={index} style={{ left: `${value * 100}%` }} />;
 }
 
 export default function Slider(props: Props): JSX.Element {
@@ -206,13 +206,13 @@ export default function Slider(props: Props): JSX.Element {
     >
       {renderSlider(fraction, classes.range)}
       {
-        A2M.map((val: number | undefined) => {
-          return RenderItem(val, classes.markerA2M)
+        A2M.map((val: number | undefined, index) => {
+          return RenderItem(val, classes.markerA2M, index)
         })
       }
       {
-        M2A.map((val: number | undefined) => {
-          return RenderItem(val, classes.markerM2A)
+        M2A.map((val: number | undefined, index) => {
+          return RenderItem(val, classes.markerM2A, index)
         })
       }
     </div>

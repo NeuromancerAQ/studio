@@ -32,6 +32,7 @@ import PlaybackBarHoverTicks from "./PlaybackBarHoverTicks";
 import { PlaybackControlsTooltipContent } from "./PlaybackControlsTooltipContent";
 import { ProgressPlot } from "./ProgressPlot";
 import Slider, { HoverOverEvent } from "./Slider";
+import { parseAppURLState } from "@foxglove/studio-base/util/appURLState";
 
 const useStyles = makeStyles()((theme) => ({
   marker: {
@@ -64,6 +65,8 @@ const selectPresence = (ctx: MessagePipelineContext) => ctx.playerState.presence
 const selectA2M = (ctx: MessagePipelineContext) => ctx.playerState.activeData?.A2M;
 const selectM2A = (ctx: MessagePipelineContext) => ctx.playerState.activeData?.M2A;
 
+const mcapUrl = parseAppURLState(new URL(window.location.href))?.dsParams?.url || "";
+
 type Props = {
   onSeek: (seekTo: Time) => void;
 };
@@ -95,11 +98,60 @@ export default function Scrubber(props: Props): JSX.Element {
   const endTime = useMessagePipeline(selectEndTime);
   const presence = useMessagePipeline(selectPresence);
   const ranges = useMessagePipeline(selectRanges);
-  const A2M = useMessagePipeline(selectA2M) || '';
-  const M2A = useMessagePipeline(selectM2A) || '';
+  const A2M = useMessagePipeline(selectA2M) || "";
+  const M2A = useMessagePipeline(selectM2A) || "";
+
+  const [a2mArray, setA2mArray] = useState(A2M.split(" ").map(val => {
+    const time = formatFoxgloveTime(val);
+    return time && startTime && endTime
+      ? toSec(subtractTimes(time, startTime)) / toSec(subtractTimes(endTime, startTime)) : undefined;
+  }));
+  const [m2aArray, setM2aArray] = useState(M2A.split(" ").map(val => {
+    const time = formatFoxgloveTime(val);
+    return time && startTime && endTime
+      ? toSec(subtractTimes(time, startTime)) / toSec(subtractTimes(endTime, startTime)) : undefined;
+  }));
+
+  useEffect(()=> {
+    if (mcapUrl && mcapUrl.endsWith(".mcap")) {
+      const infoUrl = mcapUrl.replace("data.mcap", "info.json");
+      const gradingUrl = mcapUrl.replace("data.mcap", "grading.json");
+      fetch(infoUrl)
+        .then(response => response.json())
+        .then(data => {
+          const start = formatFoxgloveTime(data.start_time)
+          const end = formatFoxgloveTime(data.end_time)
+          if(data.a_to_m) {
+            const a2m = data.a_to_m.join(" ") || "";
+            console.log(a2m, 'a2m');
+            if (a2m) {
+              const a2mArr = a2m.split(" ").map(val => {
+                const time = formatFoxgloveTime(val);
+                return time && start && end
+                  ? toSec(subtractTimes(time, start)) / toSec(subtractTimes(end, start)) : undefined;
+              });
+              console.log(a2mArr, 'a2mArr');
+              setA2mArray(a2mArr);
+            }
+          }
+          if(data.m_to_a) {
+            const m2a = data.m_to_a.join(" ") || "";
+            console.log(m2a, 'm2a');
+            if (m2a) {
+              const m2aArr = m2a.split(" ").map(val => {
+                const time = formatFoxgloveTime(val);
+                return time && start && end
+                  ? toSec(subtractTimes(time, start)) / toSec(subtractTimes(end, start)) : undefined;
+              });
+              console.log(m2aArr, 'm2aArr');
+              setM2aArray(m2aArr);
+            }
+          }
+        });
+    }
+  }, [])
 
   const setHoverValue = useSetHoverValue();
-
   type HoverInfo = {
     stamp: Time;
     clientX: number;
@@ -169,17 +221,6 @@ export default function Scrubber(props: Props): JSX.Element {
     currentTime && startTime && endTime
       ? toSec(subtractTimes(currentTime, startTime)) / toSec(subtractTimes(endTime, startTime))
       : undefined;
-
-  const a2mArray = A2M.split(' ').map(val => {
-    const time = formatFoxgloveTime(val)
-    return time && startTime && endTime
-      ?  toSec(subtractTimes(time, startTime)) / toSec(subtractTimes(endTime, startTime)) : undefined;
-  }) || []
-  const m2aArray = M2A.split(' ').map(val => {
-    const time = formatFoxgloveTime(val)
-    return time && startTime && endTime
-      ?  toSec(subtractTimes(time, startTime)) / toSec(subtractTimes(endTime, startTime)) : undefined;
-  }) || []
 
   const loading = presence === PlayerPresence.INITIALIZING || presence === PlayerPresence.BUFFERING;
 
