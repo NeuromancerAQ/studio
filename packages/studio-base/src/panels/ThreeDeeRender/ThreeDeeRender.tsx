@@ -55,7 +55,7 @@ import {
   makePoseMessage,
 } from "./publish";
 import type { LayerSettingsTransform } from "./renderables/FrameAxes";
-import { PublishClickEvent } from "./renderables/PublishClickTool";
+import { PublishClickEventMap } from "./renderables/PublishClickTool";
 import { DEFAULT_PUBLISH_SETTINGS } from "./renderables/PublishSettings";
 import { InterfaceMode } from "./types";
 
@@ -318,14 +318,21 @@ export function ThreeDeeRender(props: {
   );
   useRendererEvent("selectedRenderable", updateSelectedRenderable, renderer);
 
+  const [focusedSettingsPath, setFocusedSettingsPath] = useState<undefined | readonly string[]>();
+
+  const onShowTopicSettings = useCallback((topic: string) => {
+    setFocusedSettingsPath(["topics", topic]);
+  }, []);
+
   // Rebuild the settings sidebar tree as needed
   useEffect(() => {
     context.updatePanelSettingsEditor({
       actionHandler,
       enableFilter: true,
+      focusedPath: focusedSettingsPath,
       nodes: settingsTree ?? {},
     });
-  }, [actionHandler, context, settingsTree]);
+  }, [actionHandler, context, focusedSettingsPath, settingsTree]);
 
   // Update the renderer's reference to `config` when it changes. Note that this does *not*
   // automatically update the settings tree.
@@ -402,11 +409,9 @@ export function ThreeDeeRender(props: {
         setParameters(renderState.parameters);
 
         // currentFrame has messages on subscribed topics since the last render call
-        deepParseMessageEvents(renderState.currentFrame);
         setCurrentFrameMessages(renderState.currentFrame);
 
         // allFrames has messages on preloaded topics across all frames (as they are loaded)
-        deepParseMessageEvents(renderState.allFrames);
         setAllFrames(renderState.allFrames);
       });
     };
@@ -689,7 +694,7 @@ export function ThreeDeeRender(props: {
     const onStart = () => {
       setPublishActive(true);
     };
-    const onSubmit = (event: PublishClickEvent & { type: "foxglove.publish-submit" }) => {
+    const onSubmit = (event: PublishClickEventMap["foxglove.publish-submit"]) => {
       const frameId = renderer?.followFrameId;
       if (frameId == undefined) {
         log.warn("Unable to publish, renderFrameId is not set");
@@ -813,6 +818,7 @@ export function ThreeDeeRender(props: {
             canPublish={canPublish}
             publishActive={publishActive}
             onClickPublish={onClickPublish}
+            onShowTopicSettings={onShowTopicSettings}
             publishClickType={renderer?.publishClickTool.publishClickType ?? "point"}
             onChangePublishClickType={(type) => {
               renderer?.publishClickTool.setPublishClickType(type);
@@ -824,16 +830,4 @@ export function ThreeDeeRender(props: {
       </div>
     </ThemeProvider>
   );
-}
-
-function deepParseMessageEvents(messageEvents: ReadonlyArray<MessageEvent> | undefined): void {
-  if (!messageEvents) {
-    return;
-  }
-  for (const messageEvent of messageEvents) {
-    const maybeLazy = messageEvent.message as { toJSON?: () => unknown };
-    if ("toJSON" in maybeLazy) {
-      (messageEvent as { message: unknown }).message = maybeLazy.toJSON!();
-    }
-  }
 }

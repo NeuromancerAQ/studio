@@ -18,6 +18,7 @@ import { useAnalytics } from "@foxglove/studio-base/context/AnalyticsContext";
 //   useCurrentUser,
 //   useCurrentUserType,
 // } from "@foxglove/studio-base/context/CurrentUserContext";
+// import { useCurrentUser } from "@foxglove/studio-base/context/BaseUserContext";
 import { usePlayerSelection } from "@foxglove/studio-base/context/PlayerSelectionContext";
 import { useWorkspaceActions } from "@foxglove/studio-base/context/Workspace/useWorkspaceActions";
 import { AppEvent } from "@foxglove/studio-base/services/IAnalytics";
@@ -137,7 +138,6 @@ function DataSourceOption(props: DataSourceOptionProps): JSX.Element {
       fullWidth
       color="inherit"
       variant="outlined"
-      size="large"
       startIcon={icon}
       onClick={onClick}
     >

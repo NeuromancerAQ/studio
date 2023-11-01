@@ -14,7 +14,6 @@ import imageViewThumbnail from "./Image/thumbnail.png";
 import indicatorThumbnail from "./Indicator/thumbnail.png";
 import logThumbnail from "./Log/thumbnail.png";
 import mapThumbnail from "./Map/thumbnail.png";
-import nodePlaygroundThumbnail from "./NodePlayground/thumbnail.png";
 import parametersThumbnail from "./Parameters/thumbnail.png";
 import plotThumbnail from "./Plot/thumbnail.png";
 import publishThumbnail from "./Publish/thumbnail.png";
@@ -25,6 +24,7 @@ import tableThumbnail from "./Table/thumbnail.png";
 import teleopThumbnail from "./Teleop/thumbnail.png";
 import threeDeeRenderThumbnail from "./ThreeDeeRender/thumbnail.png";
 import topicGraphThumbnail from "./TopicGraph/thumbnail.png";
+import userScriptEditorThumbnail from "./UserScriptEditor/thumbnail.png";
 import variableSliderThumbnail from "./VariableSlider/thumbnail.png";
 import diagnosticStatusThumbnail from "./diagnostics/thumbnails/diagnostic-status.png";
 import diagnosticSummaryThumbnail from "./diagnostics/thumbnails/diagnostic-summary.png";
@@ -173,8 +173,8 @@ export const getBuiltin: (t: TFunction<"panels">) => PanelInfo[] = (t) => [
     title: t("userScripts"),
     type: "NodePlayground",
     description: t("userScriptsDescription"),
-    thumbnail: nodePlaygroundThumbnail,
-    module: async () => await import("./NodePlayground"),
+    thumbnail: userScriptEditorThumbnail,
+    module: async () => await import("./UserScriptEditor"),
   },
   {
     title: t("tab"),
@@ -211,14 +211,5 @@ export const getBuiltin: (t: TFunction<"panels">) => PanelInfo[] = (t) => [
     description: t("dashboardDescription"),
     thumbnail: stPoligonGraphThumbnail,
     module: async () => await import("./StPoligonGraph"),
-  },
-];
-
-export const getDebug: (t: TFunction<"panels">) => PanelInfo[] = (t) => [
-  {
-    title: t("studioPlaybackPerformance"),
-    type: "PlaybackPerformance",
-    description: t("studioPlaybackPerformanceDescription"),
-    module: async () => await import("./PlaybackPerformance"),
   },
 ];

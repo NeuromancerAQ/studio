@@ -22,7 +22,7 @@ import {
 } from "react";
 import { useLatest, useMountedState } from "react-use";
 
-import { useShallowMemo, useWarnImmediateReRender } from "@foxglove/hooks";
+import { useWarnImmediateReRender } from "@foxglove/hooks";
 import Logger from "@foxglove/log";
 import { MessagePipelineProvider } from "@foxglove/studio-base/components/MessagePipeline";
 import { useAnalytics } from "@foxglove/studio-base/context/AnalyticsContext";
@@ -40,44 +40,42 @@ import PlayerSelectionContext, {
   IDataSourceFactory,
   PlayerSelection,
 } from "@foxglove/studio-base/context/PlayerSelectionContext";
-import { useUserNodeState } from "@foxglove/studio-base/context/UserNodeStateContext";
+import {
+  UserScriptStore,
+  useUserScriptState,
+} from "@foxglove/studio-base/context/UserScriptStateContext";
 import { GlobalVariables } from "@foxglove/studio-base/hooks/useGlobalVariables";
 import useIndexedDbRecents, { RecentRecord } from "@foxglove/studio-base/hooks/useIndexedDbRecents";
 import AnalyticsMetricsCollector from "@foxglove/studio-base/players/AnalyticsMetricsCollector";
 import { TopicAliasingPlayer } from "@foxglove/studio-base/players/TopicAliasingPlayer/TopicAliasingPlayer";
-import UserNodePlayer from "@foxglove/studio-base/players/UserNodePlayer";
+import UserScriptPlayer from "@foxglove/studio-base/players/UserScriptPlayer";
 import { Player } from "@foxglove/studio-base/players/types";
-import { UserNodes } from "@foxglove/studio-base/types/panels";
+import { UserScripts } from "@foxglove/studio-base/types/panels";
 
 const log = Logger.getLogger(__filename);
 
-const EMPTY_USER_NODES: UserNodes = Object.freeze({});
+const EMPTY_USER_NODES: UserScripts = Object.freeze({});
 const EMPTY_GLOBAL_VARIABLES: GlobalVariables = Object.freeze({});
 
 type PlayerManagerProps = {
   playerSources: IDataSourceFactory[];
 };
 
-const userNodesSelector = (state: LayoutState) =>
+const userScriptsSelector = (state: LayoutState) =>
   state.selectedLayout?.data?.userNodes ?? EMPTY_USER_NODES;
 const globalVariablesSelector = (state: LayoutState) =>
   state.selectedLayout?.data?.globalVariables ?? EMPTY_GLOBAL_VARIABLES;
 const selectTopicAliasFunctions = (catalog: ExtensionCatalog) =>
   catalog.installedTopicAliasFunctions;
 
+const selectUserScriptActions = (store: UserScriptStore) => store.actions;
+
 export default function PlayerManager(props: PropsWithChildren<PlayerManagerProps>): JSX.Element {
   const { children, playerSources } = props;
 
   useWarnImmediateReRender();
 
-  const { setUserNodeDiagnostics, addUserNodeLogs, setUserNodeRosLib, setUserNodeTypesLib } =
-    useUserNodeState();
-  const userNodeActions = useShallowMemo({
-    setUserNodeDiagnostics,
-    addUserNodeLogs,
-    setUserNodeRosLib,
-    setUserNodeTypesLib,
-  });
+  const userScriptActions = useUserScriptState(selectUserScriptActions);
 
   const nativeWindow = useNativeWindow();
 
@@ -88,7 +86,7 @@ export default function PlayerManager(props: PropsWithChildren<PlayerManagerProp
 
   const [basePlayer, setBasePlayer] = useState<Player | undefined>();
 
-  const userNodes = useCurrentLayoutSelector(userNodesSelector);
+  const userScripts = useCurrentLayoutSelector(userScriptsSelector);
   const globalVariables = useCurrentLayoutSelector(globalVariablesSelector);
 
   const topicAliasFunctions = useExtensionCatalog(selectTopicAliasFunctions);
@@ -141,12 +139,12 @@ export default function PlayerManager(props: PropsWithChildren<PlayerManagerProp
       return undefined;
     }
 
-    const userNodePlayer = new UserNodePlayer(topicAliasPlayer, userNodeActions);
-    userNodePlayer.setGlobalVariables(globalVariablesRef.current);
-    return userNodePlayer;
-  }, [globalVariablesRef, topicAliasPlayer, userNodeActions]);
+    const userScriptPlayer = new UserScriptPlayer(topicAliasPlayer, userScriptActions);
+    userScriptPlayer.setGlobalVariables(globalVariablesRef.current);
+    return userScriptPlayer;
+  }, [globalVariablesRef, topicAliasPlayer, userScriptActions]);
 
-  useLayoutEffect(() => void player?.setUserNodes(userNodes), [player, userNodes]);
+  useLayoutEffect(() => void player?.setUserScripts(userScripts), [player, userScripts]);
 
   const { enqueueSnackbar } = useSnackbar();
 

@@ -2,7 +2,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { Ruler24Filled } from "@fluentui/react-icons";
+import { Ruler20Filled, Ruler20Regular } from "@fluentui/react-icons";
 import {
   Button,
   IconButton,
@@ -27,7 +27,6 @@ import PublishGoalIcon from "@foxglove/studio-base/components/PublishGoalIcon";
 import PublishPointIcon from "@foxglove/studio-base/components/PublishPointIcon";
 import PublishPoseEstimateIcon from "@foxglove/studio-base/components/PublishPoseEstimateIcon";
 import { usePanelMousePresence } from "@foxglove/studio-base/hooks/usePanelMousePresence";
-import { fonts } from "@foxglove/studio-base/util/sharedStyleConstants";
 
 import { InteractionContextMenu, Interactions, SelectionObject, TabType } from "./Interactions";
 import type { PickedRenderable } from "./Picker";
@@ -39,27 +38,25 @@ import { PublishClickType } from "./renderables/PublishClickTool";
 import { InterfaceMode } from "./types";
 
 const PublishClickIcons: Record<PublishClickType, React.ReactNode> = {
-  pose: <PublishGoalIcon fontSize="inherit" />,
-  point: <PublishPointIcon fontSize="inherit" />,
-  pose_estimate: <PublishPoseEstimateIcon fontSize="inherit" />,
+  pose: <PublishGoalIcon fontSize="small" />,
+  point: <PublishPointIcon fontSize="small" />,
+  pose_estimate: <PublishPoseEstimateIcon fontSize="small" />,
 };
 
 const useStyles = makeStyles()((theme) => ({
   iconButton: {
     position: "relative",
-    fontSize: "1rem !important",
     pointerEvents: "auto",
-    aspectRatio: "1",
-
-    "& svg:not(.MuiSvgIcon-root)": {
-      fontSize: "1rem !important",
-    },
+    aspectRatio: "1/1",
   },
   rulerIcon: {
     transform: "rotate(45deg)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
   },
   threeDeeButton: {
-    fontFamily: fonts.MONOSPACE,
+    fontFamily: theme.typography.fontMonospace,
     fontFeatureSettings: theme.typography.caption.fontFeatureSettings,
     fontSize: theme.typography.caption.fontSize,
     fontWeight: theme.typography.fontWeightBold,
@@ -74,25 +71,28 @@ const useStyles = makeStyles()((theme) => ({
   },
 }));
 
+type Props = {
+  addPanel: LayoutActions["addPanel"];
+  canPublish: boolean;
+  canvas: HTMLCanvasElement | ReactNull;
+  enableStats: boolean;
+  interfaceMode: InterfaceMode;
+  measureActive: boolean;
+  onChangePublishClickType: (_: PublishClickType) => void;
+  onClickMeasure: () => void;
+  onClickPublish: () => void;
+  onShowTopicSettings: (topic: string) => void;
+  onTogglePerspective: () => void;
+  perspective: boolean;
+  publishActive: boolean;
+  publishClickType: PublishClickType;
+  timezone: string | undefined;
+};
+
 /**
  * Provides DOM overlay elements on top of the 3D scene (e.g. stats, debug GUI).
  */
-export function RendererOverlay(props: {
-  interfaceMode: InterfaceMode;
-  canvas: HTMLCanvasElement | ReactNull;
-  addPanel: LayoutActions["addPanel"];
-  enableStats: boolean;
-  perspective: boolean;
-  onTogglePerspective: () => void;
-  measureActive: boolean;
-  onClickMeasure: () => void;
-  canPublish: boolean;
-  publishActive: boolean;
-  publishClickType: PublishClickType;
-  onChangePublishClickType: (_: PublishClickType) => void;
-  onClickPublish: () => void;
-  timezone: string | undefined;
-}): JSX.Element {
+export function RendererOverlay(props: Props): JSX.Element {
   const { t } = useTranslation("threeDee");
   const { classes } = useStyles();
   const [clickedPosition, setClickedPosition] = useState<{ clientX: number; clientY: number }>({
@@ -207,12 +207,13 @@ export function RendererOverlay(props: {
     <>
       <IconButton
         {...longPressPublishEvent}
+        className={classes.iconButton}
+        size="small"
         color={props.publishActive ? "info" : "inherit"}
         title={props.publishActive ? "Click to cancel" : "Click to publish"}
         ref={publickClickButtonRef}
         onClick={props.onClickPublish}
         data-testid="publish-button"
-        style={{ fontSize: "1rem", pointerEvents: "auto" }}
       >
         {selectedPublishClickIcon}
         <div
@@ -313,8 +314,9 @@ export function RendererOverlay(props: {
           (props.interfaceMode === "3d" || mousePresent) && (
             <Interactions
               addPanel={props.addPanel}
-              selectedObject={selectedObject}
               interactionsTabType={interactionsTabType}
+              onShowTopicSettings={props.onShowTopicSettings}
+              selectedObject={selectedObject}
               setInteractionsTabType={setInteractionsTabType}
               timezone={props.timezone}
             />
@@ -324,6 +326,7 @@ export function RendererOverlay(props: {
           <Paper square={false} elevation={4} style={{ display: "flex", flexDirection: "column" }}>
             <IconButton
               className={classes.iconButton}
+              size="small"
               color={props.perspective ? "info" : "inherit"}
               title={props.perspective ? "Switch to 2D camera" : "Switch to 3D camera"}
               onClick={props.onTogglePerspective}
@@ -333,11 +336,14 @@ export function RendererOverlay(props: {
             <IconButton
               data-testid="measure-button"
               className={classes.iconButton}
+              size="small"
               color={props.measureActive ? "info" : "inherit"}
               title={props.measureActive ? "Cancel measuring" : "Measure distance"}
               onClick={props.onClickMeasure}
             >
-              <Ruler24Filled className={classes.rulerIcon} />
+              <div className={classes.rulerIcon}>
+                {props.measureActive ? <Ruler20Filled /> : <Ruler20Regular />}
+              </div>
             </IconButton>
 
             {publishControls}

@@ -18,7 +18,7 @@ import { makeStyles } from "tss-react/mui";
 
 import Logger from "@foxglove/log";
 import { AppSetting } from "@foxglove/studio-base/AppSetting";
-import { AppBar } from "@foxglove/studio-base/components/AppBar";
+import { AppBarProps, AppBar } from "@foxglove/studio-base/components/AppBar";
 import { CustomWindowControlsProps } from "@foxglove/studio-base/components/AppBar/CustomWindowControls";
 import {
   DataSourceDialog,
@@ -37,6 +37,7 @@ import PanelSettings from "@foxglove/studio-base/components/PanelSettings";
 // 进度条
 import PlaybackControls from "@foxglove/studio-base/components/PlaybackControls";
 
+import { PlaybackPerformance } from "@foxglove/studio-base/components/PlaybackPerformance";
 import { ProblemsList } from "@foxglove/studio-base/components/ProblemsList";
 import RemountOnValueChange from "@foxglove/studio-base/components/RemountOnValueChange";
 import { Sidebars, SidebarItem } from "@foxglove/studio-base/components/Sidebars";
@@ -47,7 +48,7 @@ import { TopicList } from "@foxglove/studio-base/components/TopicList";
 import VariablesList from "@foxglove/studio-base/components/VariablesList";
 import { WorkspaceDialogs } from "@foxglove/studio-base/components/WorkspaceDialogs";
 import { useAppContext } from "@foxglove/studio-base/context/AppContext";
-import { useCurrentUser } from "@foxglove/studio-base/context/CurrentUserContext";
+import { useCurrentUser } from "@foxglove/studio-base/context/BaseUserContext";
 import { EventsStore, useEvents } from "@foxglove/studio-base/context/EventsContext";
 import { useExtensionCatalog } from "@foxglove/studio-base/context/ExtensionCatalogContext";
 import { usePlayerSelection } from "@foxglove/studio-base/context/PlayerSelectionContext";
@@ -89,6 +90,7 @@ type WorkspaceProps = CustomWindowControlsProps & {
   onAppBarDoubleClick?: () => void;
   // eslint-disable-next-line react/no-unused-prop-types
   disablePersistenceForStorybook?: boolean;
+  AppBarComponent?: (props: AppBarProps) => JSX.Element;
 };
 
 const selectPlayerPresence = ({ playerState }: MessagePipelineContext) => playerState.presence;
@@ -130,6 +132,7 @@ function WorkspaceContent(props: WorkspaceProps): JSX.Element {
   const rightSidebarOpen = useWorkspaceStore(selectWorkspaceRightSidebarOpen);
   const rightSidebarSize = useWorkspaceStore(selectWorkspaceRightSidebarSize);
   const { t } = useTranslation("workspace");
+  const { AppBarComponent = AppBar } = props;
 
   const { dialogActions, sidebarActions } = useWorkspaceActions();
 
@@ -148,13 +151,11 @@ function WorkspaceContent(props: WorkspaceProps): JSX.Element {
   // see comment below above the RemountOnValueChange component
   const playerId = useMessagePipeline(selectPlayerId);
 
-  const { currentUser } = useCurrentUser();
+  const { currentUserType } = useCurrentUser();
 
   useDefaultWebLaunchPreference();
 
-  const [enableStudioLogsSidebar = false] = useAppConfigurationValue<boolean>(
-    AppSetting.SHOW_DEBUG_PANELS,
-  );
+  const [enableDebugMode = false] = useAppConfigurationValue<boolean>(AppSetting.SHOW_DEBUG_PANELS);
 
   const { workspaceExtensions } = useAppContext();
 
@@ -330,7 +331,7 @@ function WorkspaceContent(props: WorkspaceProps): JSX.Element {
   );
 
   const eventsSupported = useEvents(selectEventsSupported);
-  const showEventsTab = currentUser != undefined && eventsSupported;
+  const showEventsTab = currentUserType !== "unauthenticated" && eventsSupported;
 
   const leftSidebarItems = useMemo(() => {
     const items = new Map<LeftSidebarItemKey, SidebarItem>([
@@ -358,14 +359,15 @@ function WorkspaceContent(props: WorkspaceProps): JSX.Element {
     const items = new Map<RightSidebarItemKey, SidebarItem>([
       ["variables", { title: t("variables"), component: VariablesList }],
     ]);
-    if (enableStudioLogsSidebar) {
+    if (enableDebugMode) {
       items.set("studio-logs-settings", { title: t("studioLogs"), component: StudioLogsSettings });
+      items.set("performance", { title: t("performance"), component: PlaybackPerformance });
     }
     if (showEventsTab) {
       items.set("events", { title: t("events"), component: EventsList });
     }
     return items;
-  }, [enableStudioLogsSidebar, showEventsTab, t]);
+  }, [enableDebugMode, showEventsTab, t]);
 
   const keyboardEventHasModifier = (event: KeyboardEvent) =>
     navigator.userAgent.includes("Mac") ? event.metaKey : event.ctrlKey;
@@ -459,7 +461,7 @@ function WorkspaceContent(props: WorkspaceProps): JSX.Element {
       <SyncAdapters />
       <KeyListener global keyDownHandlers={keyDownHandlers} />
       <div className={classes.container} ref={containerRef} tabIndex={0}>
-        <AppBar
+        <AppBarComponent
           leftInset={props.appBarLeftInset}
           onDoubleClick={props.onAppBarDoubleClick}
           showCustomWindowControls={props.showCustomWindowControls}

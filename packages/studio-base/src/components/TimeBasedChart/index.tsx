@@ -44,7 +44,7 @@ import {
   useTimelineInteractionState,
 } from "@foxglove/studio-base/context/TimelineInteractionStateContext";
 import { Bounds } from "@foxglove/studio-base/types/Bounds";
-import { fonts } from "@foxglove/studio-base/util/sharedStyleConstants";
+import { fontMonospace } from "@foxglove/theme";
 
 import HoverBar from "./HoverBar";
 import TimeBasedChartTooltipContent, {
@@ -201,11 +201,11 @@ export default function TimeBasedChart(props: Props): JSX.Element {
 
   React.useEffect(() => {
     setDatasetBounds((oldBounds) => {
-      if (provided != undefined && R.equals(oldBounds, provided.bounds)) {
+      if (provided != undefined && !R.equals(oldBounds, provided.bounds)) {
         return provided.bounds;
       }
 
-      if (typedProvided != undefined && R.equals(oldBounds, typedProvided.bounds)) {
+      if (typedProvided != undefined && !R.equals(oldBounds, typedProvided.bounds)) {
         return typedProvided.bounds;
       }
 
@@ -510,7 +510,7 @@ export default function TimeBasedChart(props: Props): JSX.Element {
   const xScale = useMemo<ScaleOptions>(() => {
     const defaultXTicksSettings: ScaleOptions["ticks"] = {
       font: {
-        family: fonts.MONOSPACE,
+        family: fontMonospace,
         size: 10,
       },
       color: theme.palette.text.secondary,
@@ -535,7 +535,7 @@ export default function TimeBasedChart(props: Props): JSX.Element {
   const yScale = useMemo<ScaleOptions>(() => {
     const defaultYTicksSettings: ScaleOptions["ticks"] = {
       font: {
-        family: fonts.MONOSPACE,
+        family: fontMonospace,
         size: 10,
       },
       color: theme.palette.text.secondary,

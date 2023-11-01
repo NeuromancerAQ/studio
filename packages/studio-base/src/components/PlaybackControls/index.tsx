@@ -14,7 +14,7 @@
 import {
   ArrowRepeatAll20Regular,
   ArrowRepeatAllOff20Regular,
-  Info24Regular,
+  Info20Regular,
   Next20Filled,
   Next20Regular,
   Pause20Filled,
@@ -41,7 +41,7 @@ import {
 } from "@foxglove/studio-base/components/MessagePipeline";
 import PlaybackSpeedControls from "@foxglove/studio-base/components/PlaybackSpeedControls";
 import Stack from "@foxglove/studio-base/components/Stack";
-import { useCurrentUser } from "@foxglove/studio-base/context/CurrentUserContext";
+import { useCurrentUser } from "@foxglove/studio-base/context/BaseUserContext";
 import { EventsStore, useEvents } from "@foxglove/studio-base/context/EventsContext";
 import {
   WorkspaceContextStore,
@@ -118,7 +118,7 @@ export default function PlaybackControls(props: {
   const { classes, cx } = useStyles();
   const repeat = useWorkspaceStore(selectPlaybackRepeat);
   const [createEventDialogOpen, setCreateEventDialogOpen] = useState(false);
-  const { currentUser } = useCurrentUser();
+  const { currentUserType } = useCurrentUser();
   const eventsSupported = useEvents(selectEventsSupported);
 
   const {
@@ -236,8 +236,8 @@ export default function PlaybackControls(props: {
         <Scrubber onSeek={seek} />
         <FailRange range={range} />
         <Stack direction="row" alignItems="center" flex={1} gap={1} overflowX="auto">
-          <Stack direction="row" flex={1} gap={0.5}>
-            {currentUser && eventsSupported && (
+          <Stack direction="row" alignItems="center" flex={1} gap={0.5}>
+            {currentUserType !== "unauthenticated" && eventsSupported && (
               <HoverableIconButton
                 size="small"
                 title="Create event"
@@ -266,7 +266,7 @@ export default function PlaybackControls(props: {
                   [classes.disabled]: disableControls,
                 })}
                 size="small"
-                icon={<Info24Regular />}
+                icon={<Info20Regular />}
               />
             </Tooltip>
             <PlaybackTimeDisplay onSeek={seek} onPause={pause} />
