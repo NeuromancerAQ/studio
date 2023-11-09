@@ -18,6 +18,7 @@ import MultiProvider from "./components/MultiProvider";
 import PlayerManager from "./components/PlayerManager";
 import SendNotificationToastAdapter from "./components/SendNotificationToastAdapter";
 import StudioToastProvider from "./components/StudioToastProvider";
+import AppConfigurationContext from "./context/AppConfigurationContext";
 import NativeAppMenuContext from "./context/NativeAppMenuContext";
 import NativeWindowContext from "./context/NativeWindowContext";
 import { UserScriptStateProvider } from "./context/UserScriptStateContext";
@@ -37,13 +38,14 @@ function contextMenuHandler(event: MouseEvent) {
   return false;
 }
 
-export function StudioApp(): JSX.Element {
+export function StudioApp(props): JSX.Element {
   const {
     dataSources,
     extensionLoaders,
     nativeAppMenu,
     nativeWindow,
     deepLinks,
+    appConfiguration,
     enableLaunchPreferenceScreen,
     extraProviders,
     appBarLeftInset,
@@ -51,6 +53,17 @@ export function StudioApp(): JSX.Element {
     onAppBarDoubleClick,
     AppBarComponent,
   } = useSharedRootContext();
+
+  console.log(props, "props");
+  // 针对桌面端进行修改
+  // if (props) {
+  //   dataSources = props.dataSources
+  //   // appConfiguration = props.appConfiguration
+  //   nativeAppMenu = props.nativeAppMenu
+  //   nativeWindow = props.nativeWindow
+  //   enableLaunchPreferenceScreen = props.enableLaunchPreferenceScreen
+  //   extraProviders = props.extraProviders
+  // }
 
   const providers = [
     /* eslint-disable react/jsx-key */
@@ -93,29 +106,31 @@ export function StudioApp(): JSX.Element {
   }, []);
 
   return (
-    <MaybeLaunchPreference>
-      <MultiProvider providers={providers}>
-        <DocumentTitleAdapter />
-        <SendNotificationToastAdapter />
-        <DndProvider backend={HTML5Backend}>
-          <Suspense fallback={<></>}>
-            <PanelCatalogProvider>
-              <Workspace
-                deepLinks={deepLinks}
-                appBarLeftInset={appBarLeftInset}
-                onAppBarDoubleClick={onAppBarDoubleClick}
-                showCustomWindowControls={customWindowControlProps?.showCustomWindowControls}
-                isMaximized={customWindowControlProps?.isMaximized}
-                onMinimizeWindow={customWindowControlProps?.onMinimizeWindow}
-                onMaximizeWindow={customWindowControlProps?.onMaximizeWindow}
-                onUnmaximizeWindow={customWindowControlProps?.onUnmaximizeWindow}
-                onCloseWindow={customWindowControlProps?.onCloseWindow}
-                AppBarComponent={AppBarComponent}
-              />
-            </PanelCatalogProvider>
-          </Suspense>
-        </DndProvider>
-      </MultiProvider>
-    </MaybeLaunchPreference>
+    <AppConfigurationContext.Provider value={appConfiguration}>
+      <MaybeLaunchPreference>
+        <MultiProvider providers={providers}>
+          <DocumentTitleAdapter />
+          <SendNotificationToastAdapter />
+          <DndProvider backend={HTML5Backend}>
+            <Suspense fallback={<></>}>
+              <PanelCatalogProvider>
+                <Workspace
+                  deepLinks={deepLinks}
+                  appBarLeftInset={appBarLeftInset}
+                  onAppBarDoubleClick={onAppBarDoubleClick}
+                  showCustomWindowControls={customWindowControlProps?.showCustomWindowControls}
+                  isMaximized={customWindowControlProps?.isMaximized}
+                  onMinimizeWindow={customWindowControlProps?.onMinimizeWindow}
+                  onMaximizeWindow={customWindowControlProps?.onMaximizeWindow}
+                  onUnmaximizeWindow={customWindowControlProps?.onUnmaximizeWindow}
+                  onCloseWindow={customWindowControlProps?.onCloseWindow}
+                  AppBarComponent={AppBarComponent}
+                />
+              </PanelCatalogProvider>
+            </Suspense>
+          </DndProvider>
+        </MultiProvider>
+      </MaybeLaunchPreference>
+    </AppConfigurationContext.Provider>
   );
 }
