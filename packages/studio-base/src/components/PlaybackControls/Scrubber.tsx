@@ -64,6 +64,7 @@ const selectPresence = (ctx: MessagePipelineContext) => ctx.playerState.presence
 
 const selectA2M = (ctx: MessagePipelineContext) => ctx.playerState.activeData?.A2M;
 const selectM2A = (ctx: MessagePipelineContext) => ctx.playerState.activeData?.M2A;
+const setPlayerState = (ctx: MessagePipelineContext) => ctx.setPlayerState;
 
 const mcapUrl = parseAppURLState(new URL(window.location.href))?.dsParams?.url || "";
 
@@ -100,6 +101,7 @@ export default function Scrubber(props: Props): JSX.Element {
   const ranges = useMessagePipeline(selectRanges);
   const A2M = useMessagePipeline(selectA2M) || "";
   const M2A = useMessagePipeline(selectM2A) || "";
+  const setNewPlayerState = useMessagePipeline(setPlayerState);
 
   const [a2mArray, setA2mArray] = useState(A2M.split(" ").map(val => {
     const time = formatFoxgloveTime(val);
@@ -123,29 +125,28 @@ export default function Scrubber(props: Props): JSX.Element {
           const end = formatFoxgloveTime(data.end_time)
           if(data.a_to_m) {
             const a2m = data.a_to_m.join(" ") || "";
-            console.log(a2m, 'a2m');
             if (a2m) {
               const a2mArr = a2m.split(" ").map(val => {
                 const time = formatFoxgloveTime(val);
                 return time && start && end
                   ? toSec(subtractTimes(time, start)) / toSec(subtractTimes(end, start)) : undefined;
               });
-              console.log(a2mArr, 'a2mArr');
               setA2mArray(a2mArr);
             }
           }
           if(data.m_to_a) {
             const m2a = data.m_to_a.join(" ") || "";
-            console.log(m2a, 'm2a');
             if (m2a) {
               const m2aArr = m2a.split(" ").map(val => {
                 const time = formatFoxgloveTime(val);
                 return time && start && end
                   ? toSec(subtractTimes(time, start)) / toSec(subtractTimes(end, start)) : undefined;
               });
-              console.log(m2aArr, 'm2aArr');
               setM2aArray(m2aArr);
             }
+          }
+          if(data.bag_name) {
+            setNewPlayerState && setNewPlayerState(`${data.bag_name} [${data.control_mode}] truck_type：${data.truck_type}`)
           }
         });
     }

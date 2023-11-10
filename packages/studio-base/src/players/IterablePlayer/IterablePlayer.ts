@@ -366,6 +366,12 @@ export class IterablePlayer implements Player {
     // no-op
   }
 
+  // 更改playerState值
+  public setPlayerState(name: string): void {
+    this.#name = name;
+    this.#queueEmitState();
+  }
+
   /** Request the state to switch to newState */
   #setState(newState: IterablePlayerState) {
     // nothing should override closing the player
@@ -1090,4 +1096,5 @@ export class IterablePlayer implements Player {
       },
     });
   }
+
 }

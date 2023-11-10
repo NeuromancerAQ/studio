@@ -36,4 +36,5 @@ export type MessagePipelineContext = Immutable<{
   pauseFrame: (name: string) => ResumeFrame;
   seekForward?: () => void | undefined;
   seekBackward?: () => void | undefined;
+  setPlayerState?: (name: string) => void | undefined;
 }>;

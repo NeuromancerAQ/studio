@@ -383,6 +383,9 @@ function updatePlayerStateAction(
     newPublicState.seekBackward = capabilities.includes(PlayerCapabilities.playbackControl)
       ? player.seekBackward?.bind(player)
       : undefined;
+    newPublicState.setPlayerState = capabilities.includes(PlayerCapabilities.playbackControl)
+      ? player.setPlayerState?.bind(player)
+      : undefined;
   }
 
   return {

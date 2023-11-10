@@ -75,6 +75,7 @@ export interface Player {
   // Set the globalVariables for Players that support it.
   // This is generally used to pass new globalVariables to the UserScriptPlayer
   setGlobalVariables(globalVariables: GlobalVariables): void;
+  setPlayerState?(name: string): void;
 }
 
 export enum PlayerPresence {

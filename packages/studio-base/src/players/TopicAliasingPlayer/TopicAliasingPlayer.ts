@@ -129,6 +129,10 @@ export class TopicAliasingPlayer implements Player {
     this.#player.seekPlayback?.(time);
   }
 
+  public setPlayerState?(name: string): void {
+    this.#player.setPlayerState?.(name);
+  }
+
   public playUntil?(time: Time): void {
     if (this.#player.playUntil) {
       this.#player.playUntil(time);
