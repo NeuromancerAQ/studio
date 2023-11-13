@@ -25,7 +25,7 @@ import {
   Previous20Regular,
 } from "@fluentui/react-icons";
 import { Tooltip } from "@mui/material";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { makeStyles } from "tss-react/mui";
 
 import { Time, compare } from "@foxglove/rostime";
@@ -56,6 +56,7 @@ import Scrubber from "./Scrubber";
 import FailRange from "./FailRange";
 import MetricSelect from "./MetricSelect";
 import { DIRECTION, jumpSeek } from "./sharedHelpers";
+import { parseAppURLState } from "@foxglove/studio-base/util/appURLState";
 
 const useStyles = makeStyles()((theme) => ({
   root: {
@@ -79,7 +80,7 @@ const useStyles = makeStyles()((theme) => ({
     cursor: "default",
   },
 }));
-
+const mcapUrl = parseAppURLState(new URL(window.location.href))?.dsParams?.url || "";
 const selectPresence = (ctx: MessagePipelineContext) => ctx.playerState.presence;
 const selectEventsSupported = (store: EventsStore) => store.eventsSupported;
 const selectPlaybackRepeat = (store: WorkspaceContextStore) => store.playbackControls.repeat;
@@ -97,19 +98,26 @@ export default function PlaybackControls(props: {
 }): JSX.Element {
   const { play, pause, seek, isPlaying, getTimeInfo, playUntil, seekForward, seekBackward, ds } = props;
   const presence = useMessagePipeline(selectPresence);
+  const [rangeType, setRangeType] = useState([])
+  const [range, setRange] = useState([])
+  const [total, setTotal] = useState(0)
+  const [selectName, setSelectName] = useState('')
 
-  const rangeType = [
-    {
-      metric: 'MetricOverSpeed',
-      ranges: [{start_s: 16.7, end_s: 21.5}]
-    },
-    {
-      metric: 'MetricRapidAcc',
-      ranges: [{start_s: 20.0, end_s: 25.8}]
-    },
-  ]
-
-  const [range, setRange] = useState([]);
+  useEffect(()=> {
+    if (mcapUrl && mcapUrl.endsWith(".mcap")) {
+      const gradingUrl = mcapUrl.replace("data.mcap", "grading.json");
+      fetch(gradingUrl)
+        .then(response => response.json())
+        .then(data => {
+          if (data.metrics) {
+            setRangeType(data.metrics)
+            setRange(data.metrics[0]?.ranges || [])
+            setSelectName(data.metrics[0]?.metric || '')
+            setTotal(data.total_time)
+          }
+        });
+    }
+  }, [])
 
   const handleMetricRange = (ranges) => {
     setRange(ranges)
@@ -189,7 +197,6 @@ export default function PlaybackControls(props: {
         if (!currentTime) {
           return;
         }
-
         seekForward && seekForward()
       },
       [getTimeInfo, seekForward],
@@ -234,7 +241,7 @@ export default function PlaybackControls(props: {
       <KeyListener global keyDownHandlers={keyDownHandlers} />
       <div className={classes.root}>
         <Scrubber onSeek={seek} />
-        <FailRange range={range} />
+        <FailRange range={range} total={total}/>
         <Stack direction="row" alignItems="center" flex={1} gap={1} overflowX="auto">
           <Stack direction="row" alignItems="center" flex={1} gap={0.5}>
             {currentUserType !== "unauthenticated" && eventsSupported && (
@@ -270,7 +277,7 @@ export default function PlaybackControls(props: {
               />
             </Tooltip>
             <PlaybackTimeDisplay onSeek={seek} onPause={pause} />
-            <MetricSelect handleMetricRange={handleMetricRange} rangeType={rangeType} />
+            <MetricSelect handleMetricRange={handleMetricRange} rangeType={rangeType} selectName={selectName} />
           </Stack>
           <Stack direction="row" alignItems="center" gap={1}>
             <HoverableIconButton

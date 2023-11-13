@@ -1,6 +1,7 @@
 // 针对进度条功能，增加进度条下哪个时间段是失败时间段
 import { Fade, Tooltip } from "@mui/material";
 import Stack from "@foxglove/studio-base/components/Stack";
+import * as _ from "lodash-es";
 
 type Range = {
   start_s: number,
@@ -8,12 +9,12 @@ type Range = {
 }
 
 type Props = {
-  range: Range[]
+  range: Range[],
+  total: number
 };
 
 export default function FailRang (props: Props): JSX.Element {
-  const total = 59.75
-  const { range } = props
+  const { range, total } = props
 
   return (
     <div style={{
@@ -33,7 +34,7 @@ export default function FailRang (props: Props): JSX.Element {
             <Tooltip
               title={
                 <div>
-                  {item.start_s} ~ {item.end_s}
+                  {_.round(item.start_s, 2)} ~ {_.round(item.end_s,2)}
                 </div>
               }
               placement="top"

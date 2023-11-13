@@ -1,7 +1,7 @@
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import CheckIcon from "@mui/icons-material/Check";
 import { Button, ListItemIcon, ListItemText, Menu, MenuItem } from "@mui/material";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { makeStyles } from "tss-react/mui";
 
 const useStyles = makeStyles()((theme) => ({
@@ -16,7 +16,7 @@ const useStyles = makeStyles()((theme) => ({
 }));
 
 export default function MetricSelect (props): JSX.Element {
-  const { rangeType, handleMetricRange } = props
+  const { rangeType, handleMetricRange, selectName } = props
   const [metric, setMetric] = useState('');
 
   const { classes } = useStyles();
@@ -31,9 +31,9 @@ export default function MetricSelect (props): JSX.Element {
     setAnchorEl(undefined);
   };
 
-  // useEffect(()=> {
-  //   setMetric(rangeType[0].metric)
-  // }, [rangeType])
+  useEffect(()=> {
+    setMetric(selectName)
+  }, [selectName])
 
   return (
     <>
