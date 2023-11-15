@@ -101,6 +101,7 @@ export default function PlaybackControls(props: {
   const [rangeType, setRangeType] = useState([])
   const [range, setRange] = useState([])
   const [total, setTotal] = useState(0)
+  const [metriclevel, setMetriclevel] = useState(0)
   const [selectName, setSelectName] = useState('')
 
   useEffect(()=> {
@@ -112,6 +113,7 @@ export default function PlaybackControls(props: {
           if (data.metrics) {
             setRangeType(data.metrics)
             setRange(data.metrics[0]?.ranges || [])
+            setMetriclevel(data.metrics[0]?.metriclevel || 0)
             setSelectName(data.metrics[0]?.metric || '')
             setTotal(data.total_time)
           }
@@ -119,8 +121,9 @@ export default function PlaybackControls(props: {
     }
   }, [])
 
-  const handleMetricRange = (ranges) => {
-    setRange(ranges)
+  const handleMetricRange = (item) => {
+    setRange(item.ranges)
+    setMetriclevel(item.metriclevel || 0)
   }
 
   const { classes, cx } = useStyles();
@@ -241,7 +244,7 @@ export default function PlaybackControls(props: {
       <KeyListener global keyDownHandlers={keyDownHandlers} />
       <div className={classes.root}>
         <Scrubber onSeek={seek} />
-        <FailRange range={range} total={total}/>
+        <FailRange range={range} total={total} metriclevel={metriclevel}/>
         <Stack direction="row" alignItems="center" flex={1} gap={1} overflowX="auto">
           <Stack direction="row" alignItems="center" flex={1} gap={0.5}>
             {currentUserType !== "unauthenticated" && eventsSupported && (

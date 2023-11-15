@@ -76,7 +76,7 @@ export default function MetricSelect (props): JSX.Element {
             key={option.metric}
             onClick={() => {
               setMetric(option.metric);
-              handleMetricRange(option.ranges);
+              handleMetricRange(option);
               handleClose();
             }}
           >

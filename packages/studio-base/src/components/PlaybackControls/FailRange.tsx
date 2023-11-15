@@ -10,11 +10,12 @@ type Range = {
 
 type Props = {
   range: Range[],
-  total: number
+  total: number,
+  metriclevel: number
 };
 
 export default function FailRang (props: Props): JSX.Element {
-  const { range, total } = props
+  const { range, total, metriclevel } = props
 
   return (
     <div style={{
@@ -44,9 +45,10 @@ export default function FailRang (props: Props): JSX.Element {
             >
               <div style={{
                 width: (item.end_s - item.start_s) / total * 100 + '%',
-                height: '5px',
-                background: '#ff6239',
+                height: '15px',
+                background: metriclevel === 1 ? '#d80100' : '#ff8b00',
                 position: 'absolute',
+                top: '-4px',
                 left: item.start_s / total * 100 + '%',
                 color: '#FFFFFF',
                 textAlign: 'center',
