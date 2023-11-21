@@ -12,7 +12,9 @@ import {
   Dialog,
   DialogActions,
   DialogProps,
+  DialogTitle,
   FormControlLabel,
+  FormLabel,
   IconButton,
   Link,
   Tab,
@@ -24,13 +26,13 @@ import { MouseEvent, SyntheticEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { makeStyles } from "tss-react/mui";
 
-import { AppSetting } from "@foxglove/studio-base/AppSetting";
+import { AppSetting } from "@foxglove/studio-base";
 import OsContextSingleton from "@foxglove/studio-base/OsContextSingleton";
 import CopyButton from "@foxglove/studio-base/components/CopyButton";
 import { ExperimentalFeatureSettings } from "@foxglove/studio-base/components/ExperimentalFeatureSettings";
-import ExtensionsSettings from "@foxglove/studio-base/components/ExtensionsSettings";
 import FoxgloveLogoText from "@foxglove/studio-base/components/FoxgloveLogoText";
 import Stack from "@foxglove/studio-base/components/Stack";
+import { useAppContext } from "@foxglove/studio-base/context/AppContext";
 import {
   useWorkspaceStore,
   WorkspaceContextStore,
@@ -120,6 +122,12 @@ const useStyles = makeStyles()((theme) => ({
       borderRadius: theme.shape.borderRadius,
     },
   },
+  dialogTitle: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    fontSize: theme.typography.h3.fontSize,
+  },
 }));
 
 type SectionKey = "resources" | "products" | "contact" | "legal";
@@ -199,8 +207,13 @@ export function AppSettingsDialog(
   const [telemetryEnabled, setTelemetryEnabled] = useAppConfigurationValue<boolean>(
     AppSetting.TELEMETRY_ENABLED,
   );
+  const [debugModeEnabled = false, setDebugModeEnabled] = useAppConfigurationValue<boolean>(
+    AppSetting.SHOW_DEBUG_PANELS,
+  );
   const { classes, cx, theme } = useStyles();
   const smUp = useMediaQuery(theme.breakpoints.up("sm"));
+
+  const { extensionSettings } = useAppContext();
 
   // automatic updates are a desktop-only setting
   //
@@ -221,20 +234,12 @@ export function AppSettingsDialog(
 
   return (
     <Dialog {...props} fullWidth maxWidth="md">
-      <Stack
-        direction="row"
-        justifyContent="space-between"
-        alignItems="center"
-        paddingX={3}
-        paddingY={2}
-      >
-        <Typography variant="h3" fontWeight={600}>
-          {t("settings")}
-        </Typography>
+      <DialogTitle className={classes.dialogTitle}>
+        {t("settings")}
         <IconButton edge="end" onClick={handleClose}>
           <CloseIcon />
         </IconButton>
-      </Stack>
+      </DialogTitle>
       <div className={classes.layoutGrid}>
         <Tabs
           classes={{ indicator: classes.indicator }}
@@ -267,6 +272,22 @@ export function AppSettingsDialog(
               {supportsAppUpdates && <AutoUpdate />}
               {!isDesktopApp() && <LaunchDefault />}
               {isDesktopApp() && <RosPackagePath />}
+              <Stack>
+                <FormLabel>{t("advanced")}:</FormLabel>
+                <FormControlLabel
+                  className={classes.formControlLabel}
+                  control={
+                    <Checkbox
+                      className={classes.checkbox}
+                      checked={debugModeEnabled}
+                      onChange={(_, checked) => {
+                        void setDebugModeEnabled(checked);
+                      }}
+                    />
+                  }
+                  label={t("debugModeDescription")}
+                />
+              </Stack>
             </Stack>
           </section>
 
@@ -306,15 +327,15 @@ export function AppSettingsDialog(
             </Stack>
           </section>
 
-          <section
-            className={cx(classes.tabPanel, {
-              [classes.tabPanelActive]: activeTab === "extensions",
-            })}
-          >
-            <Stack gap={2}>
-              <ExtensionsSettings />
-            </Stack>
-          </section>
+          {extensionSettings && (
+            <section
+              className={cx(classes.tabPanel, {
+                [classes.tabPanelActive]: activeTab === "extensions",
+              })}
+            >
+              <Stack gap={2}>{extensionSettings}</Stack>
+            </section>
+          )}
 
           <section
             className={cx(classes.tabPanel, {

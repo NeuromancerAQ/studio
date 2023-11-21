@@ -11,13 +11,14 @@ import { PinholeCameraModel } from "@foxglove/den/image";
 import Logger from "@foxglove/log";
 import { toNanoSec } from "@foxglove/rostime";
 import {
-  DraggedMessagePath,
   Immutable,
+  MessageEvent,
   SettingsTreeAction,
   SettingsTreeFields,
   Topic,
 } from "@foxglove/studio";
 import { PanelContextMenuItem } from "@foxglove/studio-base/components/PanelContextMenu";
+import { DraggedMessagePath } from "@foxglove/studio-base/components/PanelExtensionAdapter";
 import { Path } from "@foxglove/studio-base/panels/ThreeDeeRender/LayerErrors";
 import { IMAGE_TOPIC_PATH } from "@foxglove/studio-base/panels/ThreeDeeRender/renderables/ImageMode/constants";
 import {
@@ -245,6 +246,7 @@ export class ImageMode
         subscription: {
           handler: this.messageHandler.handleRosRawImage,
           shouldSubscribe: this.imageShouldSubscribe,
+          filterQueue: this.#filterMessageQueue.bind(this),
         },
       },
       {
@@ -253,6 +255,7 @@ export class ImageMode
         subscription: {
           handler: this.messageHandler.handleRosCompressedImage,
           shouldSubscribe: this.imageShouldSubscribe,
+          filterQueue: this.#filterMessageQueue.bind(this),
         },
       },
       {
@@ -261,6 +264,7 @@ export class ImageMode
         subscription: {
           handler: this.messageHandler.handleRawImage,
           shouldSubscribe: this.imageShouldSubscribe,
+          filterQueue: this.#filterMessageQueue.bind(this),
         },
       },
       {
@@ -269,10 +273,19 @@ export class ImageMode
         subscription: {
           handler: this.messageHandler.handleCompressedImage,
           shouldSubscribe: this.imageShouldSubscribe,
+          filterQueue: this.#filterMessageQueue.bind(this),
         },
       },
     ];
     return subscriptions.concat(this.#annotations.getSubscriptions());
+  }
+
+  #filterMessageQueue<T>(msgs: MessageEvent<T>[]): MessageEvent<T>[] {
+    // only take multiple images in if synchronization is enabled
+    if (!this.getImageModeSettings().synchronize) {
+      return msgs.slice(msgs.length - 1);
+    }
+    return msgs;
   }
 
   public override dispose(): void {

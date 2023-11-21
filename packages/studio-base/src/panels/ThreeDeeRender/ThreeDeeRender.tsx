@@ -109,7 +109,12 @@ export function ThreeDeeRender(props: {
   customSceneExtensions?: DeepPartial<SceneExtensionConfig>;
 }): JSX.Element {
   const { context, interfaceMode, testOptions, customSceneExtensions } = props;
-  const { initialState, saveState, unstable_fetchAsset: fetchAsset } = context;
+  const {
+    initialState,
+    saveState,
+    unstable_fetchAsset: fetchAsset,
+    unstable_setMessagePathDropConfig: setMessagePathDropConfig,
+  } = context;
   const analytics = useAnalytics();
 
   // Load and save the persisted panel configuration
@@ -199,7 +204,7 @@ export function ThreeDeeRender(props: {
   }, [renderer, analytics]);
 
   useEffect(() => {
-    context.EXPERIMENTAL_setMessagePathDropConfig(
+    setMessagePathDropConfig(
       renderer
         ? {
             getDropStatus: renderer.getDropStatus,
@@ -207,7 +212,7 @@ export function ThreeDeeRender(props: {
           }
         : undefined,
     );
-  }, [context, renderer]);
+  }, [setMessagePathDropConfig, renderer]);
 
   const [colorScheme, setColorScheme] = useState<"dark" | "light" | undefined>();
   const [timezone, setTimezone] = useState<string | undefined>();
@@ -226,16 +231,16 @@ export function ThreeDeeRender(props: {
   const renderRef = useRef({ needsRender: false });
   const [renderDone, setRenderDone] = useState<(() => void) | undefined>();
 
-  const schemaHandlers = useRendererProperty(
+  const schemaSubscriptions = useRendererProperty(
     renderer,
-    "schemaHandlers",
-    "schemaHandlersChanged",
+    "schemaSubscriptions",
+    "schemaSubscriptionsChanged",
     () => new Map(),
   );
-  const topicHandlers = useRendererProperty(
+  const topicSubscriptions = useRendererProperty(
     renderer,
-    "topicHandlers",
-    "topicHandlersChanged",
+    "topicSubscriptions",
+    "topicSubscriptionsChanged",
     () => new Map(),
   );
 
@@ -463,14 +468,14 @@ export function ThreeDeeRender(props: {
     };
 
     for (const topic of topics) {
-      for (const rendererSubscription of topicHandlers.get(topic.name) ?? []) {
+      for (const rendererSubscription of topicSubscriptions.get(topic.name) ?? []) {
         addSubscription(topic, rendererSubscription);
       }
-      for (const rendererSubscription of schemaHandlers.get(topic.schemaName) ?? []) {
+      for (const rendererSubscription of schemaSubscriptions.get(topic.schemaName) ?? []) {
         addSubscription(topic, rendererSubscription);
       }
       for (const schemaName of topic.convertibleTo ?? []) {
-        for (const rendererSubscription of schemaHandlers.get(schemaName) ?? []) {
+        for (const rendererSubscription of schemaSubscriptions.get(schemaName) ?? []) {
           addSubscription(topic, rendererSubscription, schemaName);
         }
       }
@@ -486,8 +491,8 @@ export function ThreeDeeRender(props: {
     // shouldSubscribe values will be re-evaluated
     config.imageMode.calibrationTopic,
     config.imageMode.imageTopic,
-    schemaHandlers,
-    topicHandlers,
+    schemaSubscriptions,
+    topicSubscriptions,
     config.imageMode.annotations,
     // Need to update subscriptions when layers change as URDF layers might subscribe to topics
     // shouldSubscribe values will be re-evaluated
@@ -779,7 +784,7 @@ export function ThreeDeeRender(props: {
 
   const onKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
-      if (event.key === "3") {
+      if (event.key === "3" && !(event.metaKey || event.ctrlKey)) {
         onTogglePerspective();
         event.stopPropagation();
         event.preventDefault();

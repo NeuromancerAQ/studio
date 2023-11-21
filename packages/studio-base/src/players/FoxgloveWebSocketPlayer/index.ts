@@ -17,6 +17,7 @@ import { fromMillis, fromNanoSec, isGreaterThan, isLessThan, Time } from "@foxgl
 import { ParameterValue } from "@foxglove/studio";
 import { Asset } from "@foxglove/studio-base/components/PanelExtensionAdapter";
 import PlayerProblemManager from "@foxglove/studio-base/players/PlayerProblemManager";
+import { estimateMessageObjectSize } from "@foxglove/studio-base/players/messageMemoryEstimation";
 import {
   AdvertiseOptions,
   MessageEvent,
@@ -69,7 +70,11 @@ const SUPPORTED_PUBLICATION_ENCODINGS = ["json", ...ROS_ENCODINGS];
 const FALLBACK_PUBLICATION_ENCODING = "json";
 const SUPPORTED_SERVICE_ENCODINGS = ["json", ...ROS_ENCODINGS];
 
-type ResolvedChannel = { channel: Channel; parsedChannel: ParsedChannel };
+type ResolvedChannel = {
+  channel: Channel;
+  parsedChannel: ParsedChannel;
+  approxDeserializedMsgSize: number;
+};
 type Publication = ClientChannel & { messageWriter?: Ros1MessageWriter | Ros2MessageWriter };
 type ResolvedService = {
   service: Service;
@@ -77,6 +82,16 @@ type ResolvedService = {
   requestMessageWriter: MessageWriter;
 };
 type MessageDefinitionMap = Map<string, MessageDefinition>;
+
+/**
+ * When the tab is inactive setTimeout's are throttled to at most once per second.
+ * Because the MessagePipeline listener uses timeouts to resolve its promises, it throttles our ability to
+ * emit a frame more than once per second. In the websocket player this was causing
+ * an accumulation of messages that were waiting to be emitted, this could keep growing
+ * indefinitely if the rate at which we emit a frame is low enough.
+ * 1500MB
+ */
+const CURRENT_FRAME_MAXIMUM_SIZE_BYTES = 15e8;
 
 export default class FoxgloveWebSocketPlayer implements Player {
   readonly #sourceId: string;
@@ -94,6 +109,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
   #topicsStats = new Map<string, TopicStats>(); // Topic names to topic statistics.
   #datatypes: MessageDefinitionMap = new Map(); // Datatypes as published by the WebSocket.
   #parsedMessages: MessageEvent[] = []; // Queue of messages that we'll send in next _emitState() call.
+  #parsedMessagesBytes: number = 0;
   #receivedBytes: number = 0;
   #metricsCollector: PlayerMetricsCollectorInterface;
   #hasReceivedMessage = false;
@@ -139,6 +155,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
   #fetchAssetRequests = new Map<number, (response: FetchAssetResponse) => void>();
   #fetchedAssets = new Map<string, Promise<Asset>>();
   #parameterTypeByName = new Map<string, Parameter["type"]>();
+  #estimatedObjectSizeByType = new Map<string, number>();
 
   public constructor({
     url,
@@ -389,6 +406,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
     this.#client.on("advertise", (newChannels) => {
       for (const channel of newChannels) {
         let parsedChannel;
+        let approxDeserializedMsgSize;
         try {
           let schemaEncoding;
           let schemaData;
@@ -439,6 +457,11 @@ export default class FoxgloveWebSocketPlayer implements Player {
             messageEncoding: channel.encoding,
             schema: { name: channel.schemaName, encoding: schemaEncoding, data: schemaData },
           });
+          approxDeserializedMsgSize = estimateMessageObjectSize(
+            parsedChannel.datatypes,
+            channel.schemaName,
+            this.#estimatedObjectSizeByType,
+          );
         } catch (error) {
           this.#unsupportedChannelIds.add(channel.id);
           this.#problems.addProblem(`schema:${channel.topic}`, {
@@ -458,7 +481,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
           this.#emitState();
           continue;
         }
-        const resolvedChannel = { channel, parsedChannel };
+        const resolvedChannel = { channel, parsedChannel, approxDeserializedMsgSize };
         this.#channelsById.set(channel.id, resolvedChannel);
         this.#channelsByTopic.set(channel.topic, resolvedChannel);
       }
@@ -517,13 +540,36 @@ export default class FoxgloveWebSocketPlayer implements Player {
         this.#receivedBytes += data.byteLength;
         const receiveTime = this.#getCurrentTime();
         const topic = chanInfo.channel.topic;
+        const sizeInBytes = Math.max(data.byteLength, chanInfo.approxDeserializedMsgSize);
         this.#parsedMessages.push({
           topic,
           receiveTime,
           message: chanInfo.parsedChannel.deserialize(data),
-          sizeInBytes: data.byteLength,
+          sizeInBytes,
           schemaName: chanInfo.channel.schemaName,
         });
+        this.#parsedMessagesBytes += sizeInBytes;
+        if (this.#parsedMessagesBytes > CURRENT_FRAME_MAXIMUM_SIZE_BYTES) {
+          this.#problems.addProblem(`webSocketPlayer:parsedMessageCacheFull`, {
+            severity: "error",
+            message: `WebSocketPlayer maximum frame size (${(
+              CURRENT_FRAME_MAXIMUM_SIZE_BYTES / 1_000_000
+            ).toFixed(
+              2,
+            )}MB) reached. Dropping old messages. This accumulation can occur if the browser tab has been inactive.`,
+          });
+          // Amortize cost of dropping messages by dropping parsedMessages size to
+          // 80% so that it doesn't happen for every message after reaching the limit
+          const evictUntilSize = 0.8 * CURRENT_FRAME_MAXIMUM_SIZE_BYTES;
+          let droppedBytes = 0;
+          let indexToCutBefore = 0;
+          while (this.#parsedMessagesBytes - droppedBytes > evictUntilSize) {
+            droppedBytes += this.#parsedMessages[indexToCutBefore]!.sizeInBytes;
+            indexToCutBefore++;
+          }
+          this.#parsedMessages.splice(0, indexToCutBefore);
+          this.#parsedMessagesBytes -= droppedBytes;
+        }
 
         // Update the message count for this topic
         const topicStats = new Map(this.#topicsStats);
@@ -553,6 +599,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
       if (this.#clockTime != undefined && isLessThan(time, this.#clockTime)) {
         this.#numTimeSeeks++;
         this.#parsedMessages = [];
+        this.#parsedMessagesBytes = 0;
       }
 
       this.#clockTime = time;
@@ -603,47 +650,81 @@ export default class FoxgloveWebSocketPlayer implements Player {
         return;
       }
 
-      let schemaEncoding: string;
+      let defaultSchemaEncoding = "";
       if (this.#serviceCallEncoding === "json") {
-        schemaEncoding = "jsonschema";
+        defaultSchemaEncoding = "jsonschema";
       } else if (this.#serviceCallEncoding === "ros1") {
-        schemaEncoding = "ros1msg";
+        defaultSchemaEncoding = "ros1msg";
       } else if (this.#serviceCallEncoding === "cdr") {
-        schemaEncoding = "ros2msg";
-      } else {
-        throw new Error(`Unsupported encoding "${this.#serviceCallEncoding}"`);
+        defaultSchemaEncoding = "ros2msg";
       }
 
       for (const service of services) {
         const serviceProblemId = `service:${service.id}`;
+        // If not explicitly given, derive request / response type name from the service type
+        // (according to ROS convention).
+        const requestType = service.request?.schemaName ?? `${service.type}_Request`;
+        const responseType = service.response?.schemaName ?? `${service.type}_Response`;
+        const requestMsgEncoding = service.request?.encoding ?? this.#serviceCallEncoding;
+        const responseMsgEncoding = service.response?.encoding ?? this.#serviceCallEncoding;
+
         try {
-          const requestType = `${service.type}_Request`;
-          const responseType = `${service.type}_Response`;
-          const parsedRequest = parseChannel({
-            messageEncoding: this.#serviceCallEncoding,
-            schema: {
-              name: requestType,
-              encoding: schemaEncoding,
-              data: textEncoder.encode(service.requestSchema),
+          if (
+            (service.request == undefined && service.requestSchema == undefined) ||
+            (service.response == undefined && service.responseSchema == undefined)
+          ) {
+            throw new Error("Invalid service definition, at least one required field is missing");
+          } else if (
+            !defaultSchemaEncoding &&
+            (service.request == undefined || service.response == undefined)
+          ) {
+            throw new Error("Cannot determine service request or response schema encoding");
+          } else if (!SUPPORTED_SERVICE_ENCODINGS.includes(requestMsgEncoding)) {
+            const supportedEncodingsStr = SUPPORTED_SERVICE_ENCODINGS.join(", ");
+            throw new Error(
+              `Unsupported service request message encoding. ${requestMsgEncoding} not in list of supported encodings [${supportedEncodingsStr}]`,
+            );
+          }
+
+          const parseChannelOptions = { allowEmptySchema: true };
+          const parsedRequest = parseChannel(
+            {
+              messageEncoding: requestMsgEncoding,
+              schema: {
+                name: requestType,
+                encoding: service.request?.schemaEncoding ?? defaultSchemaEncoding,
+                data: textEncoder.encode(service.request?.schema ?? service.requestSchema),
+              },
             },
-          });
-          const parsedResponse = parseChannel({
-            messageEncoding: this.#serviceCallEncoding,
-            schema: {
-              name: responseType,
-              encoding: schemaEncoding,
-              data: textEncoder.encode(service.responseSchema),
+            parseChannelOptions,
+          );
+          const parsedResponse = parseChannel(
+            {
+              messageEncoding: responseMsgEncoding,
+              schema: {
+                name: responseType,
+                encoding: service.response?.schemaEncoding ?? defaultSchemaEncoding,
+                data: textEncoder.encode(service.response?.schema ?? service.responseSchema),
+              },
             },
-          });
+            parseChannelOptions,
+          );
           const requestMsgDef = rosDatatypesToMessageDefinition(
             parsedRequest.datatypes,
             requestType,
           );
-          const requestMessageWriter = ROS_ENCODINGS.includes(this.#serviceCallEncoding)
-            ? this.#serviceCallEncoding === "ros1"
-              ? new Ros1MessageWriter(requestMsgDef)
-              : new Ros2MessageWriter(requestMsgDef)
-            : new JsonMessageWriter();
+          let requestMessageWriter: MessageWriter | undefined;
+          if (requestMsgEncoding === "ros1") {
+            requestMessageWriter = new Ros1MessageWriter(requestMsgDef);
+          } else if (requestMsgEncoding === "cdr") {
+            requestMessageWriter = new Ros2MessageWriter(requestMsgDef);
+          } else if (requestMsgEncoding === "json") {
+            requestMessageWriter = new JsonMessageWriter();
+          }
+          if (!requestMessageWriter) {
+            // Should never go here as we sanity-checked the encoding already above
+            throw new Error(`Unsupported service request message encoding ${requestMsgEncoding}`);
+          }
 
           // Add type definitions for service response and request
           this.#updateDataTypes(parsedRequest.datatypes);
@@ -796,6 +877,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
 
     const messages = this.#parsedMessages;
     this.#parsedMessages = [];
+    this.#parsedMessagesBytes = 0;
     return this.#listener({
       name: this.#name,
       presence: this.#presence,
@@ -1024,10 +1106,11 @@ export default class FoxgloveWebSocketPlayer implements Player {
 
     const { service, parsedResponse, requestMessageWriter } = resolvedService;
 
+    const requestMsgEncoding = service.request?.encoding ?? this.#serviceCallEncoding!;
     const serviceCallRequest: ServiceCallPayload = {
       serviceId: service.id,
       callId: ++this.#nextServiceCallId,
-      encoding: this.#serviceCallEncoding!,
+      encoding: requestMsgEncoding,
       data: new DataView(new Uint8Array().buffer),
     };
 
