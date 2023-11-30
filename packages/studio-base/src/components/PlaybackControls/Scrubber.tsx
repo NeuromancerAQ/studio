@@ -117,7 +117,6 @@ export default function Scrubber(props: Props): JSX.Element {
   useEffect(()=> {
     if (mcapUrl && mcapUrl.endsWith(".mcap")) {
       const infoUrl = mcapUrl.replace("data.mcap", "info.json");
-      const gradingUrl = mcapUrl.replace("data.mcap", "grading.json");
       fetch(infoUrl)
         .then(response => response.json())
         .then(data => {

@@ -368,7 +368,7 @@ export class IterablePlayer implements Player {
 
   // 更改playerState值
   public setPlayerState(name: string): void {
-    this.#name = name;
+    this.#name = this.#name + " | " + name;
     this.#queueEmitState();
   }
 

@@ -119,7 +119,7 @@ function Dashboard(): JSX.Element {
       dtc: "N/A",
       lateral_control_mode: -1,
       longitudinal_control_mode: -1,
-      road_error: "N/A",
+      road_error: 0,
     },
   };
   const topicRosPath: RosPath | undefined = React.useMemo(
@@ -258,7 +258,7 @@ function Dashboard(): JSX.Element {
                 <div className={"tadviz-value"}>{ vehicleInfo.self.dtc }</div>
               </div>
               <div className={"tadviz-row"}>
-                <div className={"tadviz-label"}>换道信息</div>
+                <div className={"tadviz-label"}>决策行为</div>
                 <div className={"tadviz-value"}>
                   { vehicleInfo.behavior_type || "N/A" }
                 </div>
@@ -292,7 +292,8 @@ function Dashboard(): JSX.Element {
                     <div className={"tadviz-row"}>
                       <div className={"tadviz-label"}>横向误差</div>
                       <div className={"tadviz-value"}>
-                        { keepDecimalPlaces(vehicleInfo.self.road_error) }
+                        {/*{ keepDecimalPlaces(vehicleInfo.self.road_error) }*/}
+                        { vehicleInfo.self.road_error != 0 ? round(Number(vehicleInfo.self.road_error), 3) : 0 }
                       </div>
                     </div>
                   </div>

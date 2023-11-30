@@ -55,7 +55,7 @@ const useStyles = makeStyles<void, "adornmentError">()((theme, _params, _classes
     margin: "auto",
   },
   textTruncate: {
-    maxWidth: "30vw",
+    maxWidth: "50vw",
     overflow: "hidden",
   },
   iconButton: {
