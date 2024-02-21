@@ -62,19 +62,18 @@ export const defaultLayout: LayoutData =
     "configById": {
       "3D!mm4c9j": {
         "cameraState": {
+          "distance": 58.726522473829384,
           "perspective": true,
-          "distance": 103.24633077818972,
-          "phi": 44.26481139310257,
-          "thetaOffset": 106.65583610115573,
-          "targetOffset": [
-            -49.3931983193983,
-            -4.806708100866192,
-            -5.48953122696159e-16
-          ],
+          "phi": 52.42807669922526,
           "target": [
             0,
             0,
             0
+          ],
+          "targetOffset": [
+            9.399959556738759,
+            -5.160648434173864,
+            -7.792368618470124e-16
           ],
           "targetOrientation": [
             0,
@@ -82,6 +81,7 @@ export const defaultLayout: LayoutData =
             0,
             1
           ],
+          "thetaOffset": 101.43135128770288,
           "fovy": 45,
           "near": 0.5,
           "far": 5000
@@ -93,6 +93,9 @@ export const defaultLayout: LayoutData =
             "visible": false
           },
           "frame:EGO_SHADOW": {
+            "visible": false
+          },
+          "frame:map": {
             "visible": false
           }
         },
@@ -168,6 +171,9 @@ export const defaultLayout: LayoutData =
           },
           "/hal/sensor/cam_fcf_jpeg_org": {
             "visible": false
+          },
+          "/perception/camera_locator_sign": {
+            "visible": true
           }
         },
         "layers": {},
