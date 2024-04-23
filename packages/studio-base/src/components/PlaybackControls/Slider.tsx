@@ -51,7 +51,7 @@ const useStyles = makeStyles()((theme) => ({
   },
   markerA2M: {
     label: "A2M",
-    backgroundColor: 'red',
+    backgroundColor: '#ff80d6',
     position: "absolute",
     height: 16,
     borderRadius: 1,
