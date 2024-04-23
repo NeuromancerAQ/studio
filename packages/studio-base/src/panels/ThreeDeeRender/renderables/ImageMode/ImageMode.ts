@@ -19,8 +19,12 @@ import {
 } from "@foxglove/studio";
 import { PanelContextMenuItem } from "@foxglove/studio-base/components/PanelContextMenu";
 import { DraggedMessagePath } from "@foxglove/studio-base/components/PanelExtensionAdapter";
+import { HUDItem } from "@foxglove/studio-base/panels/ThreeDeeRender/HUDItemManager";
 import { Path } from "@foxglove/studio-base/panels/ThreeDeeRender/LayerErrors";
-import { IMAGE_TOPIC_PATH } from "@foxglove/studio-base/panels/ThreeDeeRender/renderables/ImageMode/constants";
+import {
+  IMAGE_MODE_HUD_GROUP_ID,
+  IMAGE_TOPIC_PATH,
+} from "@foxglove/studio-base/panels/ThreeDeeRender/renderables/ImageMode/constants";
 import {
   IMAGE_RENDERABLE_DEFAULT_SETTINGS,
   ImageRenderable,
@@ -36,6 +40,7 @@ import {
   cameraInfosEqual,
   normalizeCameraInfo,
 } from "@foxglove/studio-base/panels/ThreeDeeRender/renderables/projections";
+import { t3D } from "@foxglove/studio-base/panels/ThreeDeeRender/t3D";
 import { makePose } from "@foxglove/studio-base/panels/ThreeDeeRender/transforms";
 import { AppEvent } from "@foxglove/studio-base/services/IAnalytics";
 import { downloadFiles } from "@foxglove/studio-base/util/download";
@@ -43,6 +48,11 @@ import { downloadFiles } from "@foxglove/studio-base/util/download";
 import { ImageModeCamera } from "./ImageModeCamera";
 import { IMessageHandler, MessageHandler, MessageRenderState } from "./MessageHandler";
 import { ImageAnnotations } from "./annotations/ImageAnnotations";
+import {
+  BOTH_TOPICS_DO_NOT_EXIST_HUD_ITEM_ID,
+  IMAGE_TOPIC_DOES_NOT_EXIST_HUD_ITEM_ID,
+  CALIBRATION_TOPIC_DOES_NOT_EXIST_HUD_ITEM_ID,
+} from "./constants";
 import type {
   AnyRendererSubscription,
   IRenderer,
@@ -83,6 +93,12 @@ const DEFAULT_FOCAL_LENGTH = 500;
 
 const REMOVE_IMAGE_TIMEOUT_MS = 50;
 
+const NO_IMAGE_TOPICS_HUD_ITEM: HUDItem = {
+  id: "NO_IMAGE_TOPICS",
+  group: IMAGE_MODE_HUD_GROUP_ID,
+  getMessage: () => t3D("noImageTopicsAvailable"),
+  displayType: "empty",
+};
 interface ImageModeEventMap extends THREE.Object3DEventMap {
   hasModifiedViewChanged: object;
 }
@@ -93,6 +109,8 @@ export const ALL_SUPPORTED_IMAGE_SCHEMAS = new Set([
   ...RAW_IMAGE_DATATYPES,
   ...COMPRESSED_IMAGE_DATATYPES,
 ]);
+
+const SUPPORTED_RAW_IMAGE_SCHEMAS = new Set([...RAW_IMAGE_DATATYPES, ...ROS_IMAGE_DATATYPES]);
 
 const ALL_SUPPORTED_CALIBRATION_SCHEMAS = new Set([
   ...CAMERA_INFO_DATATYPES,
@@ -133,9 +151,6 @@ export class ImageMode
   #dragStartPanOffset = new THREE.Vector2();
   #dragStartMouseCoords = new THREE.Vector2();
   #hasModifiedView = false;
-
-  // Will need to change when synchronization is implemented (FG-2686)
-  #latestImage: { topic: string; image: AnyImage } | undefined;
 
   public constructor(renderer: IRenderer, name: string = ImageMode.extensionId) {
     super(name, renderer);
@@ -216,7 +231,7 @@ export class ImageMode
   }
 
   protected initMessageHandler(config: Immutable<ConfigWithDefaults>): IMessageHandler {
-    return new MessageHandler(config);
+    return new MessageHandler(config, this.hud);
   }
 
   public hasModifiedView(): boolean {
@@ -305,16 +320,23 @@ export class ImageMode
     if (this.#removeImageTimeout == undefined) {
       this.#removeImageTimeout = setTimeout(() => {
         this.#removeImageTimeout = undefined;
-        this.imageRenderable?.dispose();
-        this.imageRenderable?.removeFromParent();
-        this.imageRenderable = undefined;
-        this.#clearCameraModel();
+        this.#removeImageRenderable();
+        this.renderer.queueAnimationFrame();
       }, REMOVE_IMAGE_TIMEOUT_MS);
+    }
+    // fallback camera model shouldn't ever be stale so we don't need to clear it
+    if (!this.#fallbackCameraModelActive()) {
+      this.#clearCameraModel();
     }
     this.#annotations.removeAllRenderables();
     this.messageHandler.clear();
-    this.#latestImage = undefined;
     super.removeAllRenderables();
+  }
+
+  #removeImageRenderable(): void {
+    this.imageRenderable?.dispose();
+    this.imageRenderable?.removeFromParent();
+    this.imageRenderable = undefined;
   }
 
   /**
@@ -322,6 +344,7 @@ export class ImageMode
    * Also auto-select a new calibration topic to match the new image topic.
    */
   #handleTopicsChanged = () => {
+    this.#annotations.handleTopicsChanged(this.renderer.topics);
     if (this.getImageModeSettings().imageTopic != undefined) {
       return;
     }
@@ -329,11 +352,12 @@ export class ImageMode
     const imageTopic = this.renderer.topics?.find((topic) =>
       topicIsConvertibleToSchema(topic, this.supportedImageSchemas),
     );
-    if (imageTopic == undefined) {
-      return;
-    }
 
-    this.setImageTopic(imageTopic);
+    this.hud.displayIfTrue(imageTopic == undefined, NO_IMAGE_TOPICS_HUD_ITEM);
+
+    if (imageTopic) {
+      this.setImageTopic(imageTopic);
+    }
   };
 
   /** Sets specified image topic on the config and updates calibration topic if a match is found.
@@ -341,12 +365,15 @@ export class ImageMode
    **/
   protected setImageTopic(imageTopic: Topic): void {
     const matchingCalibrationTopic = this.#getMatchingCalibrationTopic(imageTopic.name);
-    // clear renderables so that they can be reinstantiated
-    this.removeAllRenderables();
+    // don't want renderables shared across topics to ensure clean state for new topic
+    this.#removeImageRenderable();
 
     this.renderer.updateConfig((draft) => {
       draft.imageMode.imageTopic = imageTopic.name;
       if (matchingCalibrationTopic != undefined) {
+        if (draft.imageMode.calibrationTopic !== matchingCalibrationTopic.name) {
+          this.#clearCameraModel();
+        }
         draft.imageMode.calibrationTopic = matchingCalibrationTopic.name;
       }
     });
@@ -373,8 +400,14 @@ export class ImageMode
 
     const settings = this.getImageModeSettings();
 
-    const { imageTopic, calibrationTopic, synchronize, flipHorizontal, flipVertical, rotation } =
-      settings;
+    const {
+      imageTopic: imageTopicName,
+      calibrationTopic,
+      synchronize,
+      flipHorizontal,
+      flipVertical,
+      rotation,
+    } = settings;
 
     const imageTopics = filterMap(this.renderer.topics ?? [], (topic) => {
       if (!topicIsConvertibleToSchema(topic, this.supportedImageSchemas)) {
@@ -394,32 +427,54 @@ export class ImageMode
     );
 
     // Sort calibration topics with prefixes matching the image topic to the top.
-    if (imageTopic) {
-      sortPrefixMatchesToFront(calibrationTopics, imageTopic, (option) => option.label);
+    if (imageTopicName) {
+      sortPrefixMatchesToFront(calibrationTopics, imageTopicName, (option) => option.label);
     }
 
     // add unselected camera calibration option
     calibrationTopics.unshift({ label: "None", value: undefined });
 
-    if (imageTopic && !imageTopics.some((topic) => topic.value === imageTopic)) {
-      this.renderer.settings.errors.add(
-        IMAGE_TOPIC_PATH,
-        IMAGE_TOPIC_UNAVAILABLE,
-        `${imageTopic} is not available`,
-      );
-    } else {
-      this.renderer.settings.errors.remove(IMAGE_TOPIC_PATH, IMAGE_TOPIC_UNAVAILABLE);
-    }
+    const imageTopicExists =
+      !imageTopicName || imageTopics.some((topic) => topic.value === imageTopicName);
+    this.renderer.settings.errors.errorIfFalse(
+      imageTopicExists,
+      IMAGE_TOPIC_PATH,
+      IMAGE_TOPIC_UNAVAILABLE,
+      `${imageTopicName} is not available`,
+    );
 
-    if (calibrationTopic && !calibrationTopics.some((topic) => topic.value === calibrationTopic)) {
-      this.renderer.settings.errors.add(
-        CALIBRATION_TOPIC_PATH,
-        CALIBRATION_TOPIC_UNAVAILABLE,
-        `${calibrationTopic} is not available`,
-      );
-    } else {
-      this.renderer.settings.errors.remove(CALIBRATION_TOPIC_PATH, CALIBRATION_TOPIC_UNAVAILABLE);
-    }
+    const calibrationTopicExists = !(
+      calibrationTopic && !calibrationTopics.some((topic) => topic.value === calibrationTopic)
+    );
+
+    this.renderer.settings.errors.errorIfFalse(
+      calibrationTopicExists,
+      CALIBRATION_TOPIC_PATH,
+      CALIBRATION_TOPIC_UNAVAILABLE,
+      `${calibrationTopic} is not available`,
+    );
+
+    const bothTopicsDoNotExist = !imageTopicExists && !calibrationTopicExists;
+    this.hud.displayIfTrue(bothTopicsDoNotExist, {
+      id: BOTH_TOPICS_DO_NOT_EXIST_HUD_ITEM_ID,
+      displayType: "empty",
+      group: "IMAGE_MODE",
+      getMessage: () => t3D("imageAndCalibrationDNE"),
+    });
+
+    this.hud.displayIfTrue(!imageTopicExists && calibrationTopic == undefined, {
+      id: IMAGE_TOPIC_DOES_NOT_EXIST_HUD_ITEM_ID,
+      displayType: "empty",
+      group: "IMAGE_MODE",
+      getMessage: () => t3D("imageTopicDNE"),
+    });
+
+    this.hud.displayIfTrue(imageTopicExists && !calibrationTopicExists, {
+      id: CALIBRATION_TOPIC_DOES_NOT_EXIST_HUD_ITEM_ID,
+      displayType: "empty",
+      group: "IMAGE_MODE",
+      getMessage: () => t3D("calibrationTopicDNE"),
+    });
 
     const imageTopicError = this.renderer.settings.errors.errors.errorAtPath(IMAGE_TOPIC_PATH);
     const calibrationTopicError =
@@ -427,9 +482,9 @@ export class ImageMode
 
     const fields: SettingsTreeFields = {};
     fields.imageTopic = {
-      label: "Topic",
+      label: t3D("topic"),
       input: "select",
-      value: imageTopic,
+      value: imageTopicName,
       options: imageTopics,
       error: imageTopicError,
     };
@@ -467,21 +522,30 @@ export class ImageMode
       ],
     };
 
-    const colorModeFields = colorModeSettingsFields({
-      config: settings as ImageModeConfig,
+    const imageTopic =
+      imageTopicName != undefined ? this.renderer.topicsByName?.get(imageTopicName) : undefined;
+    const isRawImageTopic =
+      imageTopic != undefined &&
+      topicIsConvertibleToSchema(imageTopic, SUPPORTED_RAW_IMAGE_SCHEMAS);
 
-      defaults: {
-        gradient: DEFAULT_CONFIG.gradient,
-      },
-      modifiers: {
-        supportsPackedRgbModes: false,
-        supportsRgbaFieldsMode: false,
-        hideFlatColor: true,
-        hideExplicitAlpha: true,
-      },
-    });
+    // color settings only apply to raw image topics, so we can hide them otherwise
+    if (isRawImageTopic) {
+      const colorModeFields = colorModeSettingsFields({
+        config: settings as ImageModeConfig,
 
-    Object.assign(fields, colorModeFields);
+        defaults: {
+          gradient: DEFAULT_CONFIG.gradient,
+        },
+        modifiers: {
+          supportsPackedRgbModes: false,
+          supportsRgbaFieldsMode: false,
+          hideFlatColor: true,
+          hideExplicitAlpha: true,
+        },
+      });
+
+      Object.assign(fields, colorModeFields);
+    }
 
     return [
       {
@@ -505,59 +569,69 @@ export class ImageMode
     const path = action.payload.path;
     const category = path[0]!;
     const value = action.payload.value;
-    if (category === "imageMode") {
-      const prevImageModeConfig = this.getImageModeSettings();
-      this.saveSetting(path, value);
-      const config = this.getImageModeSettings();
-      const calibrationTopicChanged =
-        config.calibrationTopic !== prevImageModeConfig.calibrationTopic;
-      if (calibrationTopicChanged) {
-        const changingToUnselectedCalibration = config.calibrationTopic == undefined;
-        if (changingToUnselectedCalibration) {
-          this.renderer.enableImageOnlySubscriptionMode();
-        }
 
-        const changingFromUnselectedCalibration = prevImageModeConfig.calibrationTopic == undefined;
-        if (changingFromUnselectedCalibration) {
-          this.renderer.disableImageOnlySubscriptionMode();
-        }
-      }
-      const imageTopicChanged = config.imageTopic !== prevImageModeConfig.imageTopic;
-      if (imageTopicChanged && config.imageTopic != undefined) {
-        const imageTopic = this.renderer.topics?.find((topic) => topic.name === config.imageTopic);
-        if (imageTopic) {
-          this.setImageTopic(imageTopic);
-        }
-      }
-
-      if (config.rotation !== prevImageModeConfig.rotation) {
-        this.#camera.setRotation(config.rotation);
-      }
-      if (config.flipHorizontal !== prevImageModeConfig.flipHorizontal) {
-        this.#camera.setFlipHorizontal(config.flipHorizontal);
-      }
-      if (config.flipVertical !== prevImageModeConfig.flipVertical) {
-        this.#camera.setFlipVertical(config.flipVertical);
-      }
-      this.imageRenderable?.setSettings({
-        ...this.imageRenderable.userData.settings,
-        colorMode: config.colorMode,
-        flatColor: config.flatColor,
-        gradient: config.gradient as [string, string],
-        colorMap: config.colorMap,
-        explicitAlpha: config.explicitAlpha,
-        minValue: config.minValue,
-        maxValue: config.maxValue,
-      });
-      if (config.synchronize !== prevImageModeConfig.synchronize) {
-        this.removeAllRenderables();
-      }
-      this.messageHandler.setConfig(config);
-
-      this.#updateViewAndRenderables();
-    } else {
+    if (category !== "imageMode") {
       return;
     }
+
+    const prevImageModeConfig = this.getImageModeSettings();
+    this.saveSetting(path, value);
+    const config = this.getImageModeSettings();
+
+    const calibrationTopicChanged =
+      config.calibrationTopic !== prevImageModeConfig.calibrationTopic;
+    if (calibrationTopicChanged) {
+      const changingToUnselectedCalibration = config.calibrationTopic == undefined;
+      if (changingToUnselectedCalibration) {
+        this.renderer.enableImageOnlySubscriptionMode();
+        if (this.imageRenderable) {
+          this.#updateFallbackCameraModel(this.imageRenderable);
+        }
+      }
+
+      const changingFromUnselectedCalibration = prevImageModeConfig.calibrationTopic == undefined;
+      if (changingFromUnselectedCalibration) {
+        this.renderer.disableImageOnlySubscriptionMode();
+      }
+    }
+
+    const imageTopicChanged = config.imageTopic !== prevImageModeConfig.imageTopic;
+    if (imageTopicChanged && config.imageTopic != undefined) {
+      const imageTopic = this.renderer.topics?.find((topic) => topic.name === config.imageTopic);
+      if (imageTopic) {
+        this.setImageTopic(imageTopic);
+      }
+    }
+
+    if (config.rotation !== prevImageModeConfig.rotation) {
+      this.#camera.setRotation(config.rotation);
+    }
+    if (config.flipHorizontal !== prevImageModeConfig.flipHorizontal) {
+      this.#camera.setFlipHorizontal(config.flipHorizontal);
+    }
+    if (config.flipVertical !== prevImageModeConfig.flipVertical) {
+      this.#camera.setFlipVertical(config.flipVertical);
+    }
+    this.imageRenderable?.setSettings({
+      ...this.imageRenderable.userData.settings,
+      colorMode: config.colorMode,
+      flatColor: config.flatColor,
+      gradient: config.gradient as [string, string],
+      colorMap: config.colorMap,
+      explicitAlpha: config.explicitAlpha,
+      minValue: config.minValue,
+      maxValue: config.maxValue,
+    });
+    if (config.synchronize !== prevImageModeConfig.synchronize) {
+      this.hud.removeGroup(IMAGE_MODE_HUD_GROUP_ID);
+      this.#removeImageRenderable();
+      if (config.synchronize) {
+        this.#annotations.removeAllRenderables();
+      }
+    }
+    this.messageHandler.setConfig(config);
+
+    this.#updateViewAndRenderables();
 
     // Update the settings sidebar
     this.updateSettingsTree();
@@ -585,10 +659,10 @@ export class ImageMode
       return;
     }
     if (this.supportedImageSchemas.has(path.rootSchemaName)) {
-      draft.imageMode.imageTopic = path.path;
+      draft.imageMode.imageTopic = path.topicName;
     } else if (this.#annotations.supportedAnnotationSchemas.has(path.rootSchemaName)) {
       draft.imageMode.annotations ??= {};
-      draft.imageMode.annotations[path.path] = { visible: true };
+      draft.imageMode.annotations[path.topicName] = { visible: true };
     }
   };
 
@@ -604,7 +678,10 @@ export class ImageMode
     newState: MessageRenderState,
     oldState: MessageRenderState | undefined,
   ): void => {
-    if (newState.image != undefined && newState.image !== oldState?.image) {
+    if (newState.missingAnnotationTopics) {
+      this.#removeImageRenderable();
+    }
+    if (newState.image != undefined && newState.image.message !== oldState?.image?.message) {
       this.#handleImageChange(newState.image, newState.image.message);
     }
     if (newState.cameraInfo != undefined && newState.cameraInfo !== oldState?.cameraInfo) {
@@ -632,31 +709,41 @@ export class ImageMode
 
     const renderable = this.#getImageRenderable(topic, receiveTime, image, frameId);
 
-    this.#latestImage = { topic: messageEvent.topic, image };
-
     if (this.#cameraModel) {
       renderable.userData.cameraInfo = this.#cameraModel.info;
       renderable.setCameraModel(this.#cameraModel.model);
     }
 
     renderable.userData.receiveTime = receiveTime;
-    renderable.setImage(image, /*resizeWidth=*/ undefined, (size) => {
+    renderable.setImage(image, /*resizeWidth=*/ undefined, () => {
       if (this.#fallbackCameraModelActive()) {
-        this.#updateFallbackCameraModel(size, getFrameIdFromImage(image));
+        this.#updateFallbackCameraModel(renderable);
+        this.#updateViewAndRenderables();
       }
     });
   };
 
-  #updateFallbackCameraModel = (size: { width: number; height: number }, frameId: string): void => {
-    const cameraInfo = createFallbackCameraInfoForImage({
-      frameId,
-      height: size.height,
-      width: size.width,
-      focalLength: DEFAULT_FOCAL_LENGTH,
-    });
-    this.#updateCameraModel(cameraInfo);
-    this.#updateViewAndRenderables();
-  };
+  /** Creates a fallback camera model based off of the renderable with a decoded image and updates the camera.
+   * Will no-op if there is not a decodedImage on the renderable.
+   * Be sure to call `#updateViewAndRenderables` after calling this method to update the camera and renderable.
+   */
+  #updateFallbackCameraModel(renderable: ImageRenderable) {
+    const decodedImage = renderable.getDecodedImage();
+    const lastImageMessage = renderable.userData.image;
+    // if we've already received an image, use it to create a fallback camera model
+    // otherwise we would need to wait for the next image
+    if (decodedImage && lastImageMessage) {
+      const frameId = getFrameIdFromImage(lastImageMessage);
+      const { width, height } = decodedImage;
+      const cameraInfo = createFallbackCameraInfoForImage({
+        frameId,
+        height,
+        width,
+        focalLength: DEFAULT_FOCAL_LENGTH,
+      });
+      this.#updateCameraModel(cameraInfo);
+    }
+  }
 
   #fallbackCameraModelActive = (): boolean => {
     // Don't use #getImageModeSettings here for performance reasons
@@ -940,7 +1027,7 @@ export class ImageMode
         type: "item",
         label: "Download image",
         onclick: this.#getDownloadImageCallback(),
-        disabled: this.#latestImage == undefined,
+        disabled: this.imageRenderable?.getDecodedImage() == undefined,
       },
     ];
   }

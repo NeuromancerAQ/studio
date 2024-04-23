@@ -190,6 +190,15 @@ export function AppMenu(props: AppMenuProps): JSX.Element {
 
   // const onAboutClick = useCallback(() => {
   //   dialogActions.preferences.open("about");
+  //   handleNestedMenuClose();
+  // }, [dialogActions.preferences, handleNestedMenuClose]);
+  //
+  // const onDocsClick = useCallback(() => {
+  //   window.open("https://docs.foxglove.dev/docs", "_blank");
+  //   handleNestedMenuClose();
+  // }, [handleNestedMenuClose]);
+  // const onAboutClick = useCallback(() => {
+  //   dialogActions.preferences.open("about");
   //   handleAnalytics("about");
   //   handleNestedMenuClose();
   // }, [dialogActions.preferences, handleAnalytics, handleNestedMenuClose]);

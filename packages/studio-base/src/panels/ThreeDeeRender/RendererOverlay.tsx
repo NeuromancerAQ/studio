@@ -11,11 +11,13 @@ import {
   Menu,
   MenuItem,
   Paper,
+  Tooltip,
   useTheme,
 } from "@mui/material";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLongPress } from "react-use";
+import tc from "tinycolor2";
 import { makeStyles } from "tss-react/mui";
 
 import { LayoutActions } from "@foxglove/studio";
@@ -27,6 +29,7 @@ import PublishGoalIcon from "@foxglove/studio-base/components/PublishGoalIcon";
 import PublishPointIcon from "@foxglove/studio-base/components/PublishPointIcon";
 import PublishPoseEstimateIcon from "@foxglove/studio-base/components/PublishPoseEstimateIcon";
 import { usePanelMousePresence } from "@foxglove/studio-base/hooks/usePanelMousePresence";
+import { HUD } from "@foxglove/studio-base/panels/ThreeDeeRender/HUD";
 
 import { InteractionContextMenu, Interactions, SelectionObject, TabType } from "./Interactions";
 import type { PickedRenderable } from "./Picker";
@@ -44,6 +47,16 @@ const PublishClickIcons: Record<PublishClickType, React.ReactNode> = {
 };
 
 const useStyles = makeStyles()((theme) => ({
+  root: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-end",
+    gap: 10,
+    pointerEvents: "none",
+  },
   iconButton: {
     position: "relative",
     pointerEvents: "auto",
@@ -68,6 +81,14 @@ const useStyles = makeStyles()((theme) => ({
     right: 0,
     marginBottom: theme.spacing(1),
     marginRight: theme.spacing(1),
+  },
+  kbd: {
+    fontFamily: theme.typography.fontMonospace,
+    background: tc(theme.palette.common.white).darken(45).toString(),
+    padding: theme.spacing(0, 0.5),
+    aspectRatio: 1,
+    borderRadius: theme.shape.borderRadius,
+    marginLeft: theme.spacing(1),
   },
 }));
 
@@ -205,30 +226,34 @@ export function RendererOverlay(props: Props): JSX.Element {
     props.interfaceMode === "3d" && props.canPublish && renderer?.fixedFrameId != undefined;
   const publishControls = showPublishControl && (
     <>
-      <IconButton
-        {...longPressPublishEvent}
-        className={classes.iconButton}
-        size="small"
-        color={props.publishActive ? "info" : "inherit"}
+      <Tooltip
+        placement="left"
         title={props.publishActive ? "Click to cancel" : "Click to publish"}
-        ref={publickClickButtonRef}
-        onClick={props.onClickPublish}
-        data-testid="publish-button"
       >
-        {selectedPublishClickIcon}
-        <div
-          style={{
-            borderBottom: "6px solid currentColor",
-            borderRight: "6px solid transparent",
-            bottom: 0,
-            left: 0,
-            height: 0,
-            width: 0,
-            margin: theme.spacing(0.25),
-            position: "absolute",
-          }}
-        />
-      </IconButton>
+        <IconButton
+          {...longPressPublishEvent}
+          className={classes.iconButton}
+          size="small"
+          color={props.publishActive ? "info" : "inherit"}
+          ref={publickClickButtonRef}
+          onClick={props.onClickPublish}
+          data-testid="publish-button"
+        >
+          {selectedPublishClickIcon}
+          <div
+            style={{
+              borderBottom: "6px solid currentColor",
+              borderRight: "6px solid transparent",
+              bottom: 0,
+              left: 0,
+              height: 0,
+              width: 0,
+              margin: theme.spacing(0.25),
+              position: "absolute",
+            }}
+          />
+        </IconButton>
+      </Tooltip>
       <Menu
         id="publish-menu"
         anchorEl={publickClickButtonRef.current}
@@ -296,19 +321,7 @@ export function RendererOverlay(props: Props): JSX.Element {
   return (
     <>
       {props.interfaceMode === "image" && <PanelContextMenu getItems={getContextMenuItems} />}
-      <div
-        ref={mousePresenceRef}
-        style={{
-          position: "absolute",
-          top: "10px",
-          right: "10px",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "flex-end",
-          gap: 10,
-          pointerEvents: "none",
-        }}
-      >
+      <div ref={mousePresenceRef} className={classes.root}>
         {
           // Only show on hover for image panel
           (props.interfaceMode === "3d" || mousePresent) && (
@@ -324,27 +337,40 @@ export function RendererOverlay(props: Props): JSX.Element {
         }
         {props.interfaceMode === "3d" && (
           <Paper square={false} elevation={4} style={{ display: "flex", flexDirection: "column" }}>
-            <IconButton
-              className={classes.iconButton}
-              size="small"
-              color={props.perspective ? "info" : "inherit"}
-              title={props.perspective ? "Switch to 2D camera" : "Switch to 3D camera"}
-              onClick={props.onTogglePerspective}
+            <Tooltip
+              placement="left"
+              title={
+                <>
+                  {`Switch to ${props.perspective ? "2" : "3"}D camera `}
+                  <kbd className={classes.kbd}>3</kbd>
+                </>
+              }
             >
-              <span className={classes.threeDeeButton}>3D</span>
-            </IconButton>
-            <IconButton
-              data-testid="measure-button"
-              className={classes.iconButton}
-              size="small"
-              color={props.measureActive ? "info" : "inherit"}
+              <IconButton
+                className={classes.iconButton}
+                size="small"
+                color={props.perspective ? "info" : "inherit"}
+                onClick={props.onTogglePerspective}
+              >
+                <span className={classes.threeDeeButton}>3D</span>
+              </IconButton>
+            </Tooltip>
+            <Tooltip
+              placement="left"
               title={props.measureActive ? "Cancel measuring" : "Measure distance"}
-              onClick={props.onClickMeasure}
             >
-              <div className={classes.rulerIcon}>
-                {props.measureActive ? <Ruler20Filled /> : <Ruler20Regular />}
-              </div>
-            </IconButton>
+              <IconButton
+                data-testid="measure-button"
+                className={classes.iconButton}
+                size="small"
+                color={props.measureActive ? "info" : "inherit"}
+                onClick={props.onClickMeasure}
+              >
+                <div className={classes.rulerIcon}>
+                  {props.measureActive ? <Ruler20Filled /> : <Ruler20Regular />}
+                </div>
+              </IconButton>
+            </Tooltip>
 
             {publishControls}
           </Paper>
@@ -369,6 +395,7 @@ export function RendererOverlay(props: Props): JSX.Element {
           }}
         />
       )}
+      <HUD renderer={renderer} />
       {stats}
       {resetViewButton}
     </>

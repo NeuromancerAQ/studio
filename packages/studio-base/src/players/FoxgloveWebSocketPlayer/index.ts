@@ -17,7 +17,7 @@ import { fromMillis, fromNanoSec, isGreaterThan, isLessThan, Time } from "@foxgl
 import { ParameterValue } from "@foxglove/studio";
 import { Asset } from "@foxglove/studio-base/components/PanelExtensionAdapter";
 import PlayerProblemManager from "@foxglove/studio-base/players/PlayerProblemManager";
-import { estimateMessageObjectSize } from "@foxglove/studio-base/players/messageMemoryEstimation";
+import { estimateObjectSize } from "@foxglove/studio-base/players/messageMemoryEstimation";
 import {
   AdvertiseOptions,
   MessageEvent,
@@ -73,7 +73,6 @@ const SUPPORTED_SERVICE_ENCODINGS = ["json", ...ROS_ENCODINGS];
 type ResolvedChannel = {
   channel: Channel;
   parsedChannel: ParsedChannel;
-  approxDeserializedMsgSize: number;
 };
 type Publication = ClientChannel & { messageWriter?: Ros1MessageWriter | Ros2MessageWriter };
 type ResolvedService = {
@@ -89,9 +88,9 @@ type MessageDefinitionMap = Map<string, MessageDefinition>;
  * emit a frame more than once per second. In the websocket player this was causing
  * an accumulation of messages that were waiting to be emitted, this could keep growing
  * indefinitely if the rate at which we emit a frame is low enough.
- * 1500MB
+ * 400MB
  */
-const CURRENT_FRAME_MAXIMUM_SIZE_BYTES = 15e8;
+const CURRENT_FRAME_MAXIMUM_SIZE_BYTES = 400 * 1024 * 1024;
 
 export default class FoxgloveWebSocketPlayer implements Player {
   readonly #sourceId: string;
@@ -112,7 +111,6 @@ export default class FoxgloveWebSocketPlayer implements Player {
   #parsedMessagesBytes: number = 0;
   #receivedBytes: number = 0;
   #metricsCollector: PlayerMetricsCollectorInterface;
-  #hasReceivedMessage = false;
   #presence: PlayerPresence = PlayerPresence.INITIALIZING;
   #problems = new PlayerProblemManager();
   #numTimeSeeks = 0;
@@ -155,7 +153,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
   #fetchAssetRequests = new Map<number, (response: FetchAssetResponse) => void>();
   #fetchedAssets = new Map<string, Promise<Asset>>();
   #parameterTypeByName = new Map<string, Parameter["type"]>();
-  #estimatedObjectSizeByType = new Map<string, number>();
+  #messageSizeEstimateByTopic: Record<string, number> = {};
 
   public constructor({
     url,
@@ -406,7 +404,6 @@ export default class FoxgloveWebSocketPlayer implements Player {
     this.#client.on("advertise", (newChannels) => {
       for (const channel of newChannels) {
         let parsedChannel;
-        let approxDeserializedMsgSize;
         try {
           let schemaEncoding;
           let schemaData;
@@ -457,11 +454,6 @@ export default class FoxgloveWebSocketPlayer implements Player {
             messageEncoding: channel.encoding,
             schema: { name: channel.schemaName, encoding: schemaEncoding, data: schemaData },
           });
-          approxDeserializedMsgSize = estimateMessageObjectSize(
-            parsedChannel.datatypes,
-            channel.schemaName,
-            this.#estimatedObjectSizeByType,
-          );
         } catch (error) {
           this.#unsupportedChannelIds.add(channel.id);
           this.#problems.addProblem(`schema:${channel.topic}`, {
@@ -481,7 +473,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
           this.#emitState();
           continue;
         }
-        const resolvedChannel = { channel, parsedChannel, approxDeserializedMsgSize };
+        const resolvedChannel = { channel, parsedChannel };
         this.#channelsById.set(channel.id, resolvedChannel);
         this.#channelsByTopic.set(channel.topic, resolvedChannel);
       }
@@ -519,10 +511,6 @@ export default class FoxgloveWebSocketPlayer implements Player {
     });
 
     this.#client.on("message", ({ subscriptionId, data }) => {
-      if (!this.#hasReceivedMessage) {
-        this.#hasReceivedMessage = true;
-        this.#metricsCollector.recordTimeToFirstMsgs();
-      }
       const chanInfo = this.#resolvedSubscriptionsById.get(subscriptionId);
       if (!chanInfo) {
         const wasRecentlyCanceled = this.#recentlyCanceledSubscriptions.has(subscriptionId);
@@ -540,11 +528,20 @@ export default class FoxgloveWebSocketPlayer implements Player {
         this.#receivedBytes += data.byteLength;
         const receiveTime = this.#getCurrentTime();
         const topic = chanInfo.channel.topic;
-        const sizeInBytes = Math.max(data.byteLength, chanInfo.approxDeserializedMsgSize);
+        const deserializedMessage = chanInfo.parsedChannel.deserialize(data);
+
+        // Lookup the size estimate for this topic or compute it if not found in the cache.
+        let msgSizeEstimate = this.#messageSizeEstimateByTopic[topic];
+        if (msgSizeEstimate == undefined) {
+          msgSizeEstimate = estimateObjectSize(deserializedMessage);
+          this.#messageSizeEstimateByTopic[topic] = msgSizeEstimate;
+        }
+
+        const sizeInBytes = Math.max(data.byteLength, msgSizeEstimate);
         this.#parsedMessages.push({
           topic,
           receiveTime,
-          message: chanInfo.parsedChannel.deserialize(data),
+          message: deserializedMessage,
           sizeInBytes,
           schemaName: chanInfo.channel.schemaName,
         });
@@ -600,6 +597,13 @@ export default class FoxgloveWebSocketPlayer implements Player {
         this.#numTimeSeeks++;
         this.#parsedMessages = [];
         this.#parsedMessagesBytes = 0;
+      }
+
+      // Override any previous start/end time when we set a clockTime for the first time which means
+      // we've received the first "time" event and know the server controlled time.
+      if (!this.#clockTime) {
+        this.#startTime = time;
+        this.#endTime = time;
       }
 
       this.#clockTime = time;
@@ -895,6 +899,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
         endTime: this.#endTime,
         currentTime,
         isPlaying: true,
+        repeatEnabled: false,
         speed: 1,
         lastSeekTime: this.#numTimeSeeks,
         topics: this.#topics,
@@ -916,8 +921,6 @@ export default class FoxgloveWebSocketPlayer implements Player {
   public close(): void {
     this.#closed = true;
     this.#client?.close();
-    this.#metricsCollector.close();
-    this.#hasReceivedMessage = false;
     if (this.#openTimeout != undefined) {
       clearTimeout(this.#openTimeout);
       this.#openTimeout = undefined;
@@ -1290,13 +1293,13 @@ export default class FoxgloveWebSocketPlayer implements Player {
   }
 
   #resetSessionState(): void {
+    log.debug("Reset session state");
     this.#startTime = undefined;
     this.#endTime = undefined;
     this.#clockTime = undefined;
     this.#topicsStats = new Map();
     this.#parsedMessages = [];
     this.#receivedBytes = 0;
-    this.#hasReceivedMessage = false;
     this.#problems.clear();
     this.#parameters = new Map();
     this.#fetchedAssets.clear();
@@ -1310,6 +1313,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
     }
     this.#fetchAssetRequests.clear();
     this.#parameterTypeByName.clear();
+    this.#messageSizeEstimateByTopic = {};
   }
 
   #updateDataTypes(datatypes: MessageDefinitionMap): void {

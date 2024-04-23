@@ -3,12 +3,14 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import EventEmitter from "eventemitter3";
+import { quat, vec3 } from "gl-matrix";
 import i18next from "i18next";
 import { produce } from "immer";
 import * as THREE from "three";
 import { DeepPartial, assert } from "ts-essentials";
 import { v4 as uuidv4 } from "uuid";
 
+import { ObjectPool } from "@foxglove/den/collection";
 import Logger from "@foxglove/log";
 import { Time, fromNanoSec, isLessThan, toNanoSec } from "@foxglove/rostime";
 import type { FrameTransform, FrameTransforms, SceneUpdate } from "@foxglove/schemas";
@@ -30,12 +32,14 @@ import {
   DraggedMessagePath,
   MessagePathDropStatus,
 } from "@foxglove/studio-base/components/PanelExtensionAdapter";
+import { HUDItemManager } from "@foxglove/studio-base/panels/ThreeDeeRender/HUDItemManager";
 import { LayerErrors } from "@foxglove/studio-base/panels/ThreeDeeRender/LayerErrors";
 import { ICameraHandler } from "@foxglove/studio-base/panels/ThreeDeeRender/renderables/ICameraHandler";
 import IAnalytics from "@foxglove/studio-base/services/IAnalytics";
 import { palette, fontMonospace } from "@foxglove/theme";
 import { LabelMaterial, LabelPool } from "@foxglove/three-text";
 
+import { HUDItem } from "./HUDItemManager";
 import {
   IRenderer,
   InstancedLineMaterial,
@@ -79,7 +83,13 @@ import {
   Vector3,
 } from "./ros";
 import { SelectEntry } from "./settings";
-import { AddTransformResult, CoordinateFrame, Transform, TransformTree } from "./transforms";
+import {
+  AddTransformResult,
+  CoordinateFrame,
+  DEFAULT_MAX_CAPACITY_PER_FRAME,
+  TransformTree,
+  Transform,
+} from "./transforms";
 import { InterfaceMode } from "./types";
 
 const log = Logger.getLogger(__filename);
@@ -107,13 +117,20 @@ const NO_FRAME_SELECTED = "NO_FRAME_SELECTED";
 const TF_OVERFLOW = "TF_OVERFLOW";
 const CYCLE_DETECTED = "CYCLE_DETECTED";
 const FOLLOW_FRAME_NOT_FOUND = "FOLLOW_FRAME_NOT_FOUND";
+const ADD_TRANSFORM_ERROR = "ADD_TRANSFORM_ERROR";
 
 // An extensionId for creating the top-level settings nodes such as "Topics" and
 // "Custom Layers"
 const RENDERER_ID = "foxglove.Renderer";
-
+/**
+ * temp variables declared here to avoid unnecessary allocations and
+ * subsequent garbage collection in high frequency operations
+ */
 const tempColor = new THREE.Color();
 const tempVec2 = new THREE.Vector2();
+// for transforms
+const tempVec3: vec3 = [0, 0, 0];
+const tempQuat: quat = [0, 0, 0, 1];
 
 // We use a patched version of THREE.js where the internal WebGLShaderCache class has been
 // modified to allow caching based on `vertexShaderKey` and/or `fragmentShaderKey` instead of
@@ -161,6 +178,11 @@ export class Renderer extends EventEmitter<RendererEvents> implements IRenderer 
   public schemaSubscriptions = new Map<string, RendererSubscription[]>();
   // topicName -> RendererSubscription[]
   public topicSubscriptions = new Map<string, RendererSubscription[]>();
+
+  /** HUD manager instance */
+  public hud;
+  /** Items to display in the HUD */
+  public hudItems: HUDItem[] = [];
   // layerId -> { action, handler }
   #customLayerActions = new Map<string, CustomLayerAction>();
   #scene: THREE.Scene;
@@ -188,7 +210,18 @@ export class Renderer extends EventEmitter<RendererEvents> implements IRenderer 
   #selectedRenderable: PickedRenderable | undefined;
   public colorScheme: "dark" | "light" = "light";
   public modelCache: ModelCache;
-  public transformTree = new TransformTree();
+
+  /**
+   * Max capacity should be chosen to be at least several multiples of
+   * the CoordinateFrame transform max capacity. So that it can store
+   * several coordinate frames being emptied.
+   * It's mostly important to not let this grow unbounded.
+   */
+  #transformPool = new ObjectPool(Transform.Empty, {
+    maxCapacity: 5 * DEFAULT_MAX_CAPACITY_PER_FRAME,
+  });
+  public transformTree = new TransformTree(this.#transformPool);
+
   public coordinateFrameList: SelectEntry[] = [];
   public currentTime = 0n;
   public fixedFrameId: string | undefined;
@@ -231,6 +264,8 @@ export class Renderer extends EventEmitter<RendererEvents> implements IRenderer 
     this.#fetchAsset = args.fetchAsset;
     this.testOptions = args.testOptions;
     this.debugPicking = args.testOptions.debugPicking ?? false;
+
+    this.hud = new HUDItemManager(this.#onHUDItemsChange);
 
     this.settings = new SettingsManager(baseSettingsTree(this.interfaceMode));
     this.settings.on("update", () => this.emit("settingsTreeChange", this));
@@ -363,6 +398,11 @@ export class Renderer extends EventEmitter<RendererEvents> implements IRenderer 
     this.animationFrame();
   }
 
+  #onHUDItemsChange = () => {
+    this.hudItems = this.hud.getHUDItems();
+    this.emit("hudItemsChanged", this);
+  };
+
   #onDevicePixelRatioChange = () => {
     log.debug(`devicePixelRatio changed to ${window.devicePixelRatio}`);
     this.#resizeHandler(this.input.canvasSize);
@@ -395,6 +435,7 @@ export class Renderer extends EventEmitter<RendererEvents> implements IRenderer 
 
     this.labelPool.dispose();
     this.markerPool.dispose();
+    this.#transformPool.clear();
     this.#picker.dispose();
     this.input.dispose();
     this.gl.dispose();
@@ -442,12 +483,19 @@ export class Renderer extends EventEmitter<RendererEvents> implements IRenderer 
    * @param {boolean} params.clearTransforms - whether to clear the transform tree. This should be set to true when a seek to a previous time is performed in order
    * order to flush potential future state to the newly set time.
    * @param {boolean} params.resetAllFramesCursor - whether to reset the cursor for the allFrames array.
+   * Order to clear ImageMode renderables or not. Defaults to true. Not relevant in 3D panel.
+   * @param {boolean} params.clearImageModeExtension - whether to reset ImageMode renderables in clear.
    */
   public clear(
     {
       clearTransforms,
       resetAllFramesCursor,
-    }: { clearTransforms?: boolean; resetAllFramesCursor?: boolean } = {
+      clearImageModeExtension = true,
+    }: {
+      clearTransforms?: boolean;
+      resetAllFramesCursor?: boolean;
+      clearImageModeExtension?: boolean;
+    } = {
       clearTransforms: false,
       resetAllFramesCursor: false,
     },
@@ -460,8 +508,12 @@ export class Renderer extends EventEmitter<RendererEvents> implements IRenderer 
       this.#resetAllFramesCursor();
     }
     this.settings.errors.clear();
+    this.hud.clear();
 
     for (const extension of this.sceneExtensions.values()) {
+      if (!clearImageModeExtension && extension === this.#imageModeExtension) {
+        continue;
+      }
       extension.removeAllRenderables();
     }
     this.queueAnimationFrame();
@@ -688,7 +740,11 @@ export class Renderer extends EventEmitter<RendererEvents> implements IRenderer 
       this.#imageModeExtension,
       "Image mode extension should be defined when calling enable Image only mode",
     );
-    this.clear({ clearTransforms: true, resetAllFramesCursor: true });
+    this.clear({
+      clearTransforms: true,
+      resetAllFramesCursor: true,
+      clearImageModeExtension: false,
+    });
     this.#clearSubscriptions();
     this.#addSubscriptionsFromSceneExtensions(
       (extension) => extension === this.#imageModeExtension,
@@ -699,7 +755,11 @@ export class Renderer extends EventEmitter<RendererEvents> implements IRenderer 
   public disableImageOnlySubscriptionMode = (): void => {
     // .clear() will clean up remaining errors on topics
     this.settings.removeNodeValidator(this.#imageOnlyModeTopicSettingsValidator);
-    this.clear({ clearTransforms: true, resetAllFramesCursor: true });
+    this.clear({
+      clearTransforms: true,
+      resetAllFramesCursor: true,
+      clearImageModeExtension: false,
+    });
     this.#clearSubscriptions();
     this.#addSubscriptionsFromSceneExtensions();
     this.#addTransformSubscriptions();
@@ -963,21 +1023,37 @@ export class Renderer extends EventEmitter<RendererEvents> implements IRenderer 
   #addFrameTransform(transform: FrameTransform): void {
     const parentId = transform.parent_frame_id;
     const childId = transform.child_frame_id;
-    const stamp = toNanoSec(transform.timestamp);
-    const t = transform.translation;
-    const q = transform.rotation;
+    try {
+      const stamp = toNanoSec(transform.timestamp);
+      const t = transform.translation;
+      const q = transform.rotation;
 
-    this.addTransform(parentId, childId, stamp, t, q);
+      this.addTransform(parentId, childId, stamp, t, q);
+    } catch (err) {
+      this.settings.errors.add(
+        ["transforms"],
+        ADD_TRANSFORM_ERROR,
+        `Error adding transform for frame ${childId}: ${err.message}`,
+      );
+    }
   }
 
   #addTransformMessage(tf: TransformStamped): void {
     const normalizedParentId = this.normalizeFrameId(tf.header.frame_id);
     const normalizedChildId = this.normalizeFrameId(tf.child_frame_id);
-    const stamp = toNanoSec(tf.header.stamp);
-    const t = tf.transform.translation;
-    const q = tf.transform.rotation;
+    try {
+      const stamp = toNanoSec(tf.header.stamp);
+      const t = tf.transform.translation;
+      const q = tf.transform.rotation;
 
-    this.addTransform(normalizedParentId, normalizedChildId, stamp, t, q);
+      this.addTransform(normalizedParentId, normalizedChildId, stamp, t, q);
+    } catch (err) {
+      this.settings.errors.add(
+        ["transforms"],
+        ADD_TRANSFORM_ERROR,
+        `Error adding transform for frame ${normalizedChildId}: ${err.message}`,
+      );
+    }
   }
 
   // Create a new transform and add it to the renderer's TransformTree
@@ -992,7 +1068,17 @@ export class Renderer extends EventEmitter<RendererEvents> implements IRenderer 
     const t = translation;
     const q = rotation;
 
-    const transform = new Transform([t.x, t.y, t.z], [q.x, q.y, q.z, q.w]);
+    tempVec3[0] = t.x;
+    tempVec3[1] = t.y;
+    tempVec3[2] = t.z;
+
+    tempQuat[0] = q.x;
+    tempQuat[1] = q.y;
+    tempQuat[2] = q.z;
+    tempQuat[3] = q.w;
+
+    const transform = this.#transformPool.acquire();
+    transform.setPositionRotation(tempVec3, tempQuat);
     const status = this.transformTree.addTransform(childFrameId, parentFrameId, stamp, transform);
 
     if (status === AddTransformResult.UPDATED) {
@@ -1056,7 +1142,10 @@ export class Renderer extends EventEmitter<RendererEvents> implements IRenderer 
     this.followFrameId = frameId;
   }
 
-  public async fetchAsset(uri: string, options?: { signal: AbortSignal }): Promise<Asset> {
+  public async fetchAsset(
+    uri: string,
+    options?: { signal?: AbortSignal; baseUrl?: string },
+  ): Promise<Asset> {
     return await this.#fetchAsset(uri, options);
   }
 

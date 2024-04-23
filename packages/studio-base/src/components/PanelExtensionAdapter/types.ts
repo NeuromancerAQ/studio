@@ -25,6 +25,8 @@ export type DraggedMessagePath = {
   isTopic: boolean;
   /** True if the path represents a primitive value inside a message. */
   isLeaf: boolean;
+  /** The name of the top-level topic being dragged */
+  topicName: string;
 };
 
 export type MessagePathDropStatus = {
@@ -63,11 +65,16 @@ export type BuiltinPanelExtensionContext = {
    * while other schemes may fall back to the data source.
    *
    * @param uri URI identifying the asset
-   * @param options Optional abort signal that allows to abort fetching of the asset. Note that this
-   * might not be supported by all fetching methods.
+   * @param options Addiotional options:
+   *  - Optional abort signal that allows to abort fetching of the asset. Note that this
+   *    might not be supported by all fetching methods.
+   *  - Optional referenceUrl URL which may be used to resolve package:// URIs
    * @returns
    */
-  unstable_fetchAsset: (uri: string, options?: { signal: AbortSignal }) => Promise<Asset>;
+  unstable_fetchAsset: (
+    uri: string,
+    options?: { signal?: AbortSignal; referenceUrl?: string },
+  ) => Promise<Asset>;
 
   /**
    * Updates the configuration for message path drag & drop support. A value of `undefined`

@@ -98,9 +98,12 @@ const selectPlayerIsPresent = ({ playerState }: MessagePipelineContext) =>
 const selectPlayerProblems = ({ playerState }: MessagePipelineContext) => playerState.problems;
 const selectIsPlaying = (ctx: MessagePipelineContext) =>
   ctx.playerState.activeData?.isPlaying === true;
+const selectRepeatEnabled = (ctx: MessagePipelineContext) =>
+  ctx.playerState.activeData?.repeatEnabled === true;
 const selectPause = (ctx: MessagePipelineContext) => ctx.pausePlayback;
 const selectPlay = (ctx: MessagePipelineContext) => ctx.startPlayback;
 const selectSeek = (ctx: MessagePipelineContext) => ctx.seekPlayback;
+const selectEnableRepeat = (ctx: MessagePipelineContext) => ctx.enableRepeatPlayback;
 const selectSeekForward = (ctx: MessagePipelineContext) => ctx.seekForward;
 const selectSeekBackward = (ctx: MessagePipelineContext) => ctx.seekBackward;
 const selectPlayUntil = (ctx: MessagePipelineContext) => ctx.playUntil;
@@ -157,7 +160,7 @@ function WorkspaceContent(props: WorkspaceProps): JSX.Element {
 
   const [enableDebugMode = false] = useAppConfigurationValue<boolean>(AppSetting.SHOW_DEBUG_PANELS);
 
-  const { workspaceExtensions } = useAppContext();
+  const { workspaceExtensions = [] } = useAppContext();
 
   // When a player is activated, hide the open dialog.
   useLayoutEffect(() => {
@@ -353,6 +356,8 @@ function WorkspaceContent(props: WorkspaceProps): JSX.Element {
   const playUntil = useMessagePipeline(selectPlayUntil);
   const pause = useMessagePipeline(selectPause);
   const seek = useMessagePipeline(selectSeek);
+  const enableRepeat = useMessagePipeline(selectEnableRepeat);
+  const repeatEnabled = useMessagePipeline(selectRepeatEnabled);
   const seekForward = useMessagePipeline(selectSeekForward);
   const seekBackward = useMessagePipeline(selectSeekBackward);
   const isPlaying = useMessagePipeline(selectIsPlaying);
@@ -378,7 +383,7 @@ function WorkspaceContent(props: WorkspaceProps): JSX.Element {
       return;
     }
 
-    // Apply any available datasource args
+    // Apply any available data source args
     if (unappliedSourceArgs.ds) {
       log.debug("Initialising source from url", unappliedSourceArgs);
       selectSource(unappliedSourceArgs.ds, {
@@ -409,6 +414,34 @@ function WorkspaceContent(props: WorkspaceProps): JSX.Element {
     setUnappliedTime({ time: undefined });
   }, [playerPresence, seek, unappliedTime]);
 
+  const appBar = useMemo(
+    () => (
+      <AppBarComponent
+        leftInset={props.appBarLeftInset}
+        onDoubleClick={props.onAppBarDoubleClick}
+        showCustomWindowControls={props.showCustomWindowControls}
+        isMaximized={props.isMaximized}
+        initialZoomFactor={props.initialZoomFactor}
+        onMinimizeWindow={props.onMinimizeWindow}
+        onMaximizeWindow={props.onMaximizeWindow}
+        onUnmaximizeWindow={props.onUnmaximizeWindow}
+        onCloseWindow={props.onCloseWindow}
+      />
+    ),
+    [
+      AppBarComponent,
+      props.appBarLeftInset,
+      props.isMaximized,
+      props.initialZoomFactor,
+      props.onAppBarDoubleClick,
+      props.onCloseWindow,
+      props.onMaximizeWindow,
+      props.onMinimizeWindow,
+      props.onUnmaximizeWindow,
+      props.showCustomWindowControls,
+    ],
+  );
+
   return (
     <PanelStateContextProvider>
       {dataSourceDialog.open && <DataSourceDialog />}
@@ -416,16 +449,7 @@ function WorkspaceContent(props: WorkspaceProps): JSX.Element {
       <SyncAdapters />
       <KeyListener global keyDownHandlers={keyDownHandlers} />
       <div className={classes.container} ref={containerRef} tabIndex={0}>
-        <AppBarComponent
-          leftInset={props.appBarLeftInset}
-          onDoubleClick={props.onAppBarDoubleClick}
-          showCustomWindowControls={props.showCustomWindowControls}
-          isMaximized={props.isMaximized}
-          onMinimizeWindow={props.onMinimizeWindow}
-          onMaximizeWindow={props.onMaximizeWindow}
-          onUnmaximizeWindow={props.onUnmaximizeWindow}
-          onCloseWindow={props.onCloseWindow}
-        />
+        {appBar}
         <Sidebars
           leftItems={leftSidebarItems}
           selectedLeftKey={leftSidebarOpen ? leftSidebarItem : undefined}
@@ -446,7 +470,7 @@ function WorkspaceContent(props: WorkspaceProps): JSX.Element {
           </RemountOnValueChange>
         </Sidebars>
         {/*foxglove进度条*/}
-        {play && pause && seek && (
+        {play && pause && seek && enableRepeat && (
           <div style={{ flexShrink: 0 }}>
             <PlaybackControls
               play={play}
@@ -456,13 +480,16 @@ function WorkspaceContent(props: WorkspaceProps): JSX.Element {
               seekBackward={seekBackward}
               playUntil={playUntil}
               isPlaying={isPlaying}
+              repeatEnabled={repeatEnabled}
+              enableRepeatPlayback={enableRepeat}
               getTimeInfo={getTimeInfo}
               ds={targetUrlState?.ds}
             />
           </div>
         )}
       </div>
-      {workspaceExtensions}
+      {/* Splat to avoid requiring unique a `key` on each item in workspaceExtensions */}
+      {...workspaceExtensions}
       <WorkspaceDialogs />
     </PanelStateContextProvider>
   );

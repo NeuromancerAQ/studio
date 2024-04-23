@@ -67,6 +67,13 @@ const useStyles = makeStyles()((theme) => ({
     backgroundColor: theme.palette.background.paper,
     borderTop: `1px solid ${theme.palette.divider}`,
     zIndex: 100000,
+    overflowX: "auto",
+  },
+  scrubberWrapper: {
+    position: "sticky",
+    top: 0,
+    right: 0,
+    left: 0,
   },
   disabled: {
     opacity: theme.palette.action.disabledOpacity,
@@ -91,12 +98,15 @@ export default function PlaybackControls(props: {
   seek: NonNullable<Player["seekPlayback"]>;
   seekForward: NonNullable<Player["seekForward"]> | undefined;
   seekBackward: NonNullable<Player["seekBackward"]> | undefined;
+  enableRepeatPlayback: NonNullable<Player["enableRepeatPlayback"]>;
   playUntil?: Player["playUntil"];
   isPlaying: boolean;
+  repeatEnabled: boolean;
   getTimeInfo: () => { startTime?: Time; endTime?: Time; currentTime?: Time };
   ds: string | undefined;
 }): JSX.Element {
-  const { play, pause, seek, isPlaying, getTimeInfo, playUntil, seekForward, seekBackward, ds } = props;
+  const { play, pause, seek, isPlaying, enableRepeatPlayback,
+    repeatEnabled, getTimeInfo, playUntil, seekForward, seekBackward, ds } = props;
   const presence = useMessagePipeline(selectPresence);
   const [rangeType, setRangeType] = useState([])
   const [range, setRange] = useState([])
@@ -137,8 +147,17 @@ export default function PlaybackControls(props: {
   } = useWorkspaceActions();
 
   const toggleRepeat = useCallback(() => {
+    // toggle repeat on the workspace
     setRepeat((old) => !old);
   }, [setRepeat]);
+
+  useEffect(() => {
+    // if workspace has a preference stored that is not reflected in the iterable player...
+    if (repeat !== repeatEnabled) {
+      // sync the workspace preference with the iterable player
+      enableRepeatPlayback(repeat);
+    }
+  }, [repeat, repeatEnabled, enableRepeatPlayback]);
 
   const togglePlayPause = useCallback(() => {
     if (isPlaying) {
@@ -243,7 +262,9 @@ export default function PlaybackControls(props: {
       <RepeatAdapter play={play} seek={seek} repeatEnabled={repeat} />
       <KeyListener global keyDownHandlers={keyDownHandlers} />
       <div className={classes.root}>
-        <Scrubber onSeek={seek} />
+        <div className={classes.scrubberWrapper}>
+          <Scrubber onSeek={seek} />
+        </div>
         <FailRange range={range} total={total} metriclevel={metriclevel}/>
         <Stack direction="row" alignItems="center" flex={1} gap={1} overflowX="auto">
           <Stack direction="row" alignItems="center" flex={1} gap={0.5}>
@@ -316,11 +337,12 @@ export default function PlaybackControls(props: {
             <HoverableIconButton
               size="small"
               title="Loop playback"
-              color={repeat ? "primary" : "inherit"}
+              disabled={disableControls}
+              color={repeatEnabled ? "primary" : "inherit"}
               onClick={toggleRepeat}
-              icon={repeat ? <ArrowRepeatAll20Regular /> : <ArrowRepeatAllOff20Regular />}
+              icon={repeatEnabled ? <ArrowRepeatAll20Regular /> : <ArrowRepeatAllOff20Regular />}
             />
-            <PlaybackSpeedControls />
+            <PlaybackSpeedControls disabled={disableControls} />
           </Stack>
         </Stack>
         {createEventDialogOpen && eventsSupported && (

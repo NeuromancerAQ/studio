@@ -2,6 +2,8 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
+import * as _ from "lodash-es";
+
 import { MutexLocked } from "@foxglove/den/async";
 import { Time } from "@foxglove/rostime";
 import { Immutable, ParameterValue } from "@foxglove/studio";
@@ -9,6 +11,7 @@ import { Asset } from "@foxglove/studio-base/components/PanelExtensionAdapter";
 import { GlobalVariables } from "@foxglove/studio-base/hooks/useGlobalVariables";
 import {
   AdvertiseOptions,
+  PlaybackSpeed,
   Player,
   PlayerState,
   PublishPayload,
@@ -27,8 +30,7 @@ export type { TopicAliasFunctions };
 
 /**
  * This is a player that wraps an underlying player and applies aliases to all topic names
- * in data emitted from the player. It is inserted into the player chain before
- * UserScriptPlayer so that UserScriptPlayer can use the aliased topics.
+ * in data emitted from the player.
  *
  * Aliases that alias input topics to other input topics or that request conflicting
  * aliases from multiple input topics to the same output topic are disallowed and flagged
@@ -38,7 +40,7 @@ export class TopicAliasingPlayer implements Player {
   readonly #player: Player;
 
   #inputs: Immutable<StateFactoryInput>;
-  #pendingSubscriptions: undefined | SubscribePayload[];
+  #aliasedSubscriptions: undefined | SubscribePayload[];
   #subscriptions: SubscribePayload[] = [];
 
   // True if no aliases are active and we can pass calls directly through to the
@@ -55,17 +57,13 @@ export class TopicAliasingPlayer implements Player {
   // mutex prevents invoking the listener concurrently.
   #listener?: MutexLocked<(state: PlayerState) => Promise<void>>;
 
-  public constructor(
-    player: Player,
-    aliasFunctions: Immutable<TopicAliasFunctions>,
-    variables: Immutable<GlobalVariables>,
-  ) {
+  public constructor(player: Player) {
     this.#player = player;
-    this.#skipAliasing = aliasFunctions.length === 0;
+    this.#skipAliasing = true;
     this.#inputs = {
-      aliasFunctions,
+      aliasFunctions: [],
       topics: undefined,
-      variables,
+      variables: {},
     };
   }
 
@@ -88,22 +86,8 @@ export class TopicAliasingPlayer implements Player {
 
   public setSubscriptions(subscriptions: SubscribePayload[]): void {
     this.#subscriptions = subscriptions;
-
-    if (this.#skipAliasing) {
-      this.#player.setSubscriptions(subscriptions);
-      return;
-    }
-
-    // If we have aliases but haven't recieved a topic list from an active state from
-    // the wrapped player yet we have to delay setSubscriptions until we have the topic
-    // list to set up the aliases.
-    if (this.#inputs.topics != undefined) {
-      const aliasedSubscriptions = this.#stateProcessor.aliasSubscriptions(subscriptions);
-      this.#player.setSubscriptions(aliasedSubscriptions);
-      this.#pendingSubscriptions = undefined;
-    } else {
-      this.#pendingSubscriptions = subscriptions;
-    }
+    this.#aliasedSubscriptions = this.#stateProcessor.aliasSubscriptions(subscriptions);
+    this.#player.setSubscriptions(this.#aliasedSubscriptions);
   }
 
   public setPublishers(publishers: AdvertiseOptions[]): void {
@@ -142,6 +126,11 @@ export class TopicAliasingPlayer implements Player {
     this.#player.seekPlayback?.(time);
   }
 
+  // eslint-disable-next-line @foxglove/no-boolean-parameters
+  public enableRepeatPlayback(enable: boolean): void {
+    this.#player.enableRepeatPlayback?.(enable);
+  }
+
   public setPlayerState?(name: string): void {
     this.#player.setPlayerState?.(name);
   }
@@ -154,7 +143,7 @@ export class TopicAliasingPlayer implements Player {
     this.#player.seekPlayback?.(time);
   }
 
-  public setPlaybackSpeed?(speedFraction: number): void {
+  public setPlaybackSpeed?(speedFraction: PlaybackSpeed): void {
     this.#player.setPlaybackSpeed?.(speedFraction);
   }
 
@@ -168,7 +157,11 @@ export class TopicAliasingPlayer implements Player {
     // We can skip re-processing if we don't have any alias functions setup or we have not
     // had any player state provided yet. The player state handler onPlayerState will handle alias
     // function processing when it is called.
-    if (this.#skipAliasing || this.#lastPlayerState == undefined) {
+    if (
+      this.#skipAliasing ||
+      this.#lastPlayerState == undefined ||
+      this.#inputs.topics == undefined
+    ) {
       return;
     }
 
@@ -178,6 +171,11 @@ export class TopicAliasingPlayer implements Player {
     // need to re-process the existing player state
     const shouldReprocess = stateProcessor !== this.#stateProcessor;
     this.#stateProcessor = stateProcessor;
+
+    // If we have a new processor we might also have new subscriptions for downstream
+    if (shouldReprocess) {
+      this.#resetSubscriptions();
+    }
 
     // Re-process the last player state if the processor has changed since we might have new downstream topics
     // for panels to subscribe or get new re-mapped messages.
@@ -215,7 +213,14 @@ export class TopicAliasingPlayer implements Player {
       // are an input to the alias functions.
       if (playerState.activeData?.topics !== this.#inputs.topics) {
         this.#inputs = { ...this.#inputs, topics: playerState.activeData?.topics };
-        this.#stateProcessor = this.#stateProcessorFactory.buildStateProcessor(this.#inputs);
+        const stateProcessor = this.#stateProcessorFactory.buildStateProcessor(this.#inputs);
+
+        // if the state processor is changed, then we might need to re-process subscriptions since
+        // we might now be able to produce new subscriptions
+        if (this.#stateProcessor !== stateProcessor) {
+          this.#stateProcessor = stateProcessor;
+          this.#resetSubscriptions();
+        }
       }
 
       // remember the last player state so we can re-use it when global variables are set
@@ -224,10 +229,18 @@ export class TopicAliasingPlayer implements Player {
       // Process the player state using the latest aliases
       const newState = this.#stateProcessor.process(playerState, this.#subscriptions);
       await listener(newState);
-
-      if (this.#pendingSubscriptions && this.#inputs.topics) {
-        this.setSubscriptions(this.#pendingSubscriptions);
-      }
     });
+  }
+
+  /**
+   * Re-calculate the subscriptions using the latest state processor. If the subscriptions have
+   * changed then call setSubscriptions on the wrapped player.
+   */
+  #resetSubscriptions() {
+    const aliasedSubscriptions = this.#stateProcessor.aliasSubscriptions(this.#subscriptions);
+    if (!_.isEqual(this.#aliasedSubscriptions, aliasedSubscriptions)) {
+      this.#aliasedSubscriptions = aliasedSubscriptions;
+      this.#player.setSubscriptions(aliasedSubscriptions);
+    }
   }
 }

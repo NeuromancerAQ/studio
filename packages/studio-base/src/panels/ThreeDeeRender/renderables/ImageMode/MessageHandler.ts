@@ -18,6 +18,10 @@ import {
   ImageAnnotations as FoxgloveImageAnnotations,
 } from "@foxglove/schemas";
 import { Immutable, MessageEvent } from "@foxglove/studio";
+import {
+  HUDItem,
+  HUDItemManager,
+} from "@foxglove/studio-base/panels/ThreeDeeRender/HUDItemManager";
 import { ImageModeConfig } from "@foxglove/studio-base/panels/ThreeDeeRender/IRenderer";
 import {
   AnyImage,
@@ -37,8 +41,18 @@ import {
 
 import { normalizeAnnotations } from "./annotations/normalizeAnnotations";
 import { Annotation } from "./annotations/types";
+import {
+  IMAGE_MODE_HUD_GROUP_ID,
+  WAITING_FOR_BOTH_MESSAGES_HUD_ID,
+  WAITING_FOR_CALIBRATION_HUD_ID,
+  WAITING_FOR_IMAGES_NOTICE_ID,
+  WAITING_FOR_IMAGES_EMPTY_HUD_ID,
+  WAITING_FOR_SYNC_NOTICE_HUD_ID,
+  WAITING_FOR_SYNC_EMPTY_HUD_ID,
+} from "./constants";
 import { PartialMessageEvent } from "../../SceneExtension";
 import { CompressedImage as RosCompressedImage, Image as RosImage, CameraInfo } from "../../ros";
+import { t3D } from "../../t3D";
 
 type NormalizedAnnotations = {
   // required for setting the original message on the renderable
@@ -74,6 +88,48 @@ type RenderStateListener = (
   oldState: MessageRenderState | undefined,
 ) => void;
 
+// Have constants for the HUD items so that they don't need to be recreated and GCed every message
+export const WAITING_FOR_BOTH_HUD_ITEM: HUDItem = {
+  id: WAITING_FOR_BOTH_MESSAGES_HUD_ID,
+  group: IMAGE_MODE_HUD_GROUP_ID,
+  getMessage: () => t3D("waitingForCalibrationAndImages"),
+  displayType: "empty",
+};
+
+export const WAITING_FOR_CALIBRATION_HUD_ITEM: HUDItem = {
+  id: WAITING_FOR_CALIBRATION_HUD_ID,
+  group: IMAGE_MODE_HUD_GROUP_ID,
+  getMessage: () => t3D("waitingForCalibration"),
+  displayType: "empty",
+};
+
+export const WAITING_FOR_IMAGE_NOTICE_HUD_ITEM: HUDItem = {
+  id: WAITING_FOR_IMAGES_NOTICE_ID,
+  group: IMAGE_MODE_HUD_GROUP_ID,
+  getMessage: () => t3D("waitingForImages"),
+  displayType: "notice",
+};
+
+export const WAITING_FOR_IMAGE_EMPTY_HUD_ITEM: HUDItem = {
+  id: WAITING_FOR_IMAGES_EMPTY_HUD_ID,
+  group: IMAGE_MODE_HUD_GROUP_ID,
+  getMessage: () => t3D("waitingForImages"),
+  displayType: "empty",
+};
+
+export const WAITING_FOR_SYNC_NOTICE_HUD_ITEM: HUDItem = {
+  id: WAITING_FOR_SYNC_NOTICE_HUD_ID,
+  group: IMAGE_MODE_HUD_GROUP_ID,
+  getMessage: () => t3D("waitingForSyncAnnotations"),
+  displayType: "notice",
+};
+
+export const WAITING_FOR_SYNC_EMPTY_HUD_ITEM: HUDItem = {
+  id: WAITING_FOR_SYNC_EMPTY_HUD_ID,
+  group: IMAGE_MODE_HUD_GROUP_ID,
+  getMessage: () => t3D("waitingForSyncAnnotations"),
+  displayType: "empty",
+};
 /**
  * Processes and normalizes incoming messages and manages state of
  * messages to be rendered given the ImageMode config. A large part of this responsibility
@@ -83,6 +139,9 @@ type RenderStateListener = (
 export class MessageHandler implements IMessageHandler {
   /** settings that should reflect image mode config */
   #config: Immutable<Config>;
+
+  /** Allows message handler push messages to overlay on top of the canvas */
+  #hud: HUDItemManager;
 
   /** last state passed to listeners */
   #oldRenderState: MessageRenderState | undefined;
@@ -96,26 +155,31 @@ export class MessageHandler implements IMessageHandler {
   /** listener functions that are called when the state changes. */
   #listeners: RenderStateListener[] = [];
 
+  /** Holds what annotations are currently available on the given source. These are needed because annotations
+   * that are marked as visible may be present in the layout/config, but are not present on the source.
+   * This can cause synchronized annotations to never resolve if the source does not have the annotation topic
+   * with no indication to the user that the annotation is not available.
+   */
+  #availableAnnotationTopics: Set<string>;
+
   /**
    *
    * @param config - subset of ImageMode settings required for message handling
    */
-  public constructor(config: Immutable<Config>) {
+  public constructor(config: Immutable<Config>, hud: HUDItemManager) {
     this.#config = config;
+    this.#hud = hud;
     this.#lastReceivedMessages = {
       annotationsByTopic: new Map(),
     };
     this.#tree = new AVLTree<Time, SynchronizationItem>(compareTime);
+    this.#availableAnnotationTopics = new Set();
   }
-  /**
-   *  Add listener that will trigger every time the state changes
-   *  The listener will be called with the new state and the previous state.
-   */
+
   public addListener(listener: RenderStateListener): void {
     this.#listeners.push(listener);
   }
 
-  /** Remove listener from being called on state update */
   public removeListener(listener: RenderStateListener): void {
     this.#listeners = this.#listeners.filter((fn) => fn !== listener);
   }
@@ -144,12 +208,18 @@ export class MessageHandler implements IMessageHandler {
       message: image,
     };
 
+    this.#lastReceivedMessages.image = normalizedImageMessage;
     if (this.#config.synchronize !== true) {
-      this.#lastReceivedMessages.image = normalizedImageMessage;
       this.#emitState();
       return;
     }
     // Update the image at the stamp time
+    this.#addImageToTree(normalizedImageMessage);
+    this.#emitState();
+  }
+
+  #addImageToTree(normalizedImageMessage: MessageEvent<AnyImage>) {
+    const image = normalizedImageMessage.message;
     const item = this.#tree.get(getTimestampFromImage(image));
     if (item) {
       item.image = normalizedImageMessage;
@@ -159,7 +229,6 @@ export class MessageHandler implements IMessageHandler {
         annotationsByTopic: new Map(),
       });
     }
-    this.#emitState();
   }
 
   public handleCameraInfo = (message: PartialMessageEvent<CameraInfo>): void => {
@@ -213,11 +282,16 @@ export class MessageHandler implements IMessageHandler {
     this.#emitState();
   };
 
-  public setConfig(newConfig: Immutable<Partial<ImageModeConfig>>): void {
+  public setConfig(newConfig: Immutable<ImageModeConfig>): void {
     let changed = false;
 
     if (newConfig.synchronize != undefined && newConfig.synchronize !== this.#config.synchronize) {
+      this.#oldRenderState = undefined;
       this.#tree.clear();
+      if (newConfig.synchronize && this.#lastReceivedMessages.image != undefined) {
+        this.#addImageToTree(this.#lastReceivedMessages.image);
+      }
+
       changed = true;
     }
 
@@ -229,10 +303,7 @@ export class MessageHandler implements IMessageHandler {
       changed = true;
     }
 
-    if (
-      "calibrationTopic" in newConfig &&
-      this.#config.calibrationTopic !== newConfig.calibrationTopic
-    ) {
+    if (this.#config.calibrationTopic !== newConfig.calibrationTopic) {
       this.#lastReceivedMessages.cameraInfo = undefined;
       changed = true;
     }
@@ -266,14 +337,16 @@ export class MessageHandler implements IMessageHandler {
       }
     }
 
-    this.#config = {
-      ...this.#config,
-      ...newConfig,
-    };
+    this.#config = newConfig;
 
     if (changed) {
       this.#emitState();
     }
+  }
+
+  public setAvailableAnnotationTopics(topicNames: string[]): void {
+    this.#availableAnnotationTopics = new Set(topicNames);
+    this.#emitState();
   }
 
   public clear(): void {
@@ -286,7 +359,8 @@ export class MessageHandler implements IMessageHandler {
   }
 
   #emitState() {
-    const state = this.getRenderState();
+    const state = this.getRenderStateAndUpdateHUD();
+
     this.#listeners.forEach((fn) => {
       fn(state, this.#oldRenderState);
     });
@@ -294,7 +368,53 @@ export class MessageHandler implements IMessageHandler {
   }
 
   /** Do not use. only public for testing */
-  public getRenderState(): Readonly<Partial<MessageHandlerState>> {
+  public getRenderStateAndUpdateHUD(): Readonly<Partial<MessageHandlerState>> {
+    const state = this.#getRenderState();
+    this.#updateHUDFromState(state);
+    return state;
+  }
+
+  #updateHUDFromState(state: MessageRenderState): void {
+    const calibrationRequired = this.#config.calibrationTopic != undefined;
+
+    const waitingForImage =
+      this.#lastReceivedMessages.image == undefined && state.image == undefined;
+
+    const waitingForCalibration = calibrationRequired && state.cameraInfo == undefined;
+
+    const waitingForBoth = waitingForImage && waitingForCalibration;
+
+    this.#hud.displayIfTrue(waitingForBoth, WAITING_FOR_BOTH_HUD_ITEM);
+
+    // don't show other empty states when waiting for both to reduce noise
+    this.#hud.displayIfTrue(
+      waitingForCalibration && !waitingForBoth,
+      WAITING_FOR_CALIBRATION_HUD_ITEM,
+    );
+    this.#hud.displayIfTrue(
+      waitingForImage && !calibrationRequired && !waitingForBoth,
+      WAITING_FOR_IMAGE_EMPTY_HUD_ITEM,
+    );
+    this.#hud.displayIfTrue(
+      waitingForImage && calibrationRequired,
+      WAITING_FOR_IMAGE_NOTICE_HUD_ITEM,
+    );
+
+    const waitingForSync =
+      !!state.missingAnnotationTopics && state.missingAnnotationTopics.length > 0;
+    this.#hud.displayIfTrue(
+      waitingForSync && calibrationRequired,
+      WAITING_FOR_SYNC_NOTICE_HUD_ITEM,
+    );
+
+    // it is an empty state if calibration not required
+    this.#hud.displayIfTrue(
+      waitingForSync && !calibrationRequired,
+      WAITING_FOR_SYNC_EMPTY_HUD_ITEM,
+    );
+  }
+
+  #getRenderState(): Readonly<Partial<MessageHandlerState>> {
     if (this.#config.synchronize === true) {
       const result = findSynchronizedSetAndRemoveOlderItems(this.#tree, this.#visibleAnnotations());
       if (result.found) {
@@ -310,14 +430,13 @@ export class MessageHandler implements IMessageHandler {
         missingAnnotationTopics: result.missingAnnotationTopics,
       };
     }
-
     return { ...this.#lastReceivedMessages };
   }
 
   #visibleAnnotations(): Set<string> {
     const visibleAnnotations = new Set<string>();
     for (const [topic, settings] of Object.entries(this.#config.annotations ?? {})) {
-      if (settings?.visible === true) {
+      if (settings?.visible === true && this.#availableAnnotationTopics.has(topic)) {
         visibleAnnotations.add(topic);
       }
     }
@@ -334,11 +453,22 @@ export interface IMessageHandler {
   handleAnnotations: (
     messageEvent: MessageEvent<FoxgloveImageAnnotations | RosImageMarker | RosImageMarkerArray>,
   ) => void;
+  /**
+   *  Add listener that will trigger every time the state changes
+   *  The listener will be called with the new state and the previous state.
+   */
   addListener(listener: RenderStateListener): void;
+  /** Remove listener from being called on state update */
   removeListener(listener: RenderStateListener): void;
   setConfig(newConfig: Immutable<Partial<ImageModeConfig>>): void;
   clear(): void;
-  getRenderState(): Readonly<Partial<MessageHandlerState>>;
+  getRenderStateAndUpdateHUD(): Readonly<Partial<MessageHandlerState>>;
+
+  /**
+   * Set what topics are available on the current source.
+   * This will prevent having to wait on annotations that are in the layout but not in the source.
+   */
+  setAvailableAnnotationTopics(availableAnnotations: string[]): void;
 }
 
 type SynchronizationResult =
