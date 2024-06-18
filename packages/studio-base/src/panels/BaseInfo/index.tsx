@@ -56,6 +56,7 @@ function BaseInfo(): JSX.Element {
   const { classes } = useStyles();
   const planningTopicPath = "/planning/planning_visualization";
   const taskManagerTopicPath = "/task_manager/task_visualization";
+  const newTaskManagerTopicPath = "/task_manager/task_request_list";
 
   const pTopicRosPath: RosPath | undefined = React.useMemo(
     () => parseRosPath(planningTopicPath),
@@ -67,18 +68,29 @@ function BaseInfo(): JSX.Element {
     [taskManagerTopicPath],
   );
 
+  const ntTopicRosPath: RosPath | undefined = React.useMemo(
+    () => parseRosPath(newTaskManagerTopicPath),
+    [newTaskManagerTopicPath],
+  );
+
   const pTopicName = pTopicRosPath?.topicName ?? "";
   const tTopicName = tTopicRosPath?.topicName ?? "";
+  const ntTopicName = ntTopicRosPath?.topicName ?? "";
   const pMsgs = useMessagesByTopic({ topics: [pTopicName], historySize: 1 })[pTopicName];
   const tMsgs = useMessagesByTopic({ topics: [tTopicName], historySize: 1 })[tTopicName];
+  const ntMsgs = useMessagesByTopic({ topics: [ntTopicName], historySize: 1 })[ntTopicName];
   const pCachedGetMessagePathDataItems = useCachedGetMessagePathDataItems([planningTopicPath]);
   const tCachedGetMessagePathDataItems = useCachedGetMessagePathDataItems([taskManagerTopicPath]);
+  const ntCachedGetMessagePathDataItems = useCachedGetMessagePathDataItems([newTaskManagerTopicPath]);
   const pMsg = pMsgs?.[0];
   const tMsg = tMsgs?.[0];
+  const ntMsg = ntMsgs?.[0];
   const pCachedMessages = pMsg ? pCachedGetMessagePathDataItems(planningTopicPath, pMsg) ?? [] : [];
   const tCachedMessages = tMsg ? tCachedGetMessagePathDataItems(taskManagerTopicPath, tMsg) ?? [] : [];
+  const ntCachedMessages = ntMsg ? ntCachedGetMessagePathDataItems(newTaskManagerTopicPath, ntMsg) ?? [] : [];
   const pMessages = pCachedMessages[0]?.value;
   const tMessages = tCachedMessages[0]?.value;
+  const ntMessages = ntCachedMessages[0]?.value;
 
   const [pInfoList, setPInfoList] = useState([
     {
@@ -166,18 +178,19 @@ function BaseInfo(): JSX.Element {
   }, [pMessages]);
 
   useEffect(() => {
-    if (tMessages) {
-
-      const newTInfoList: {label: string, value: any}[] = taskManagePath.map(item => {
+    let newTInfoList: {label: string, value: any}[] = []
+    if (tMessages || ntMessages) {
+      newTInfoList = taskManagePath.map(item => {
         return {
           label: item.label,
           value: get(tMessages, item.path, "N/A")
         }
       })
-
+      console.log(ntMessages, 'ntMessages');
+      newTInfoList[0].value = ntMessages?.task_requests[0]?.task_id || 'N/A';
       setTInfoList(newTInfoList);
     }
-  }, [tMessages]);
+  }, [tMessages, ntMessages]);
 
   return (
     <>
