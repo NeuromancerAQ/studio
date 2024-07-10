@@ -186,8 +186,23 @@ function BaseInfo(): JSX.Element {
           value: get(tMessages, item.path, "N/A")
         }
       })
-      console.log(ntMessages, 'ntMessages');
-      newTInfoList[0].value = ntMessages?.task_requests[0]?.task_id || 'N/A';
+      // console.log(ntMessages, 'ntMessages');
+      const aff = '(重构)'
+      if (ntMessages?.task_requests[0]?.task_id) {
+        newTInfoList[0].value = ntMessages?.task_requests[0]?.task_id + aff
+      }
+
+      if (ntMessages?.task_requests[0]?.driving_assist_request) {
+        newTInfoList[1].value = 'driving_assist_request'+ aff
+      } else if (ntMessages?.task_requests[0]?.parking_request) {
+        newTInfoList[1].value = 'parking_request'+ aff
+      } else if (ntMessages?.task_requests[0]?.target_driving_request) {
+        newTInfoList[1].value = 'target_driving_request'+ aff
+      } else if (ntMessages?.task_requests[0]?.emergency_parking_request) {
+        newTInfoList[1].value = 'emergency_parking_request'+ aff
+      } else if (ntMessages?.task_requests[0]?.data_construction_request) {
+        newTInfoList[1].value = 'data_construction_request'+ aff
+      }
       setTInfoList(newTInfoList);
     }
   }, [tMessages, ntMessages]);
