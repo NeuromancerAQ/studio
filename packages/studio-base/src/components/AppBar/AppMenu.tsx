@@ -17,6 +17,7 @@ import { useWorkspaceActions } from "@foxglove/studio-base/context/Workspace/use
 
 import { NestedMenuItem } from "./NestedMenuItem";
 import { AppBarMenuItem } from "./types";
+import { parseAppURLState } from "@foxglove/studio-base/util/appURLState";
 
 export type AppMenuProps = {
   handleClose: () => void;
@@ -120,6 +121,16 @@ export function AppMenu(props: AppMenuProps): JSX.Element {
     t,
   ]);
 
+  // 转到平台
+  const toPlatform = () => {
+    const params = parseAppURLState(new URL(window.location.href));
+    const jobId = params?.jobId || ''
+    const taskId = params?.taskId || ''
+    const isSil = params?.isSil || false
+    const simType = params?.simType || ''
+    window.open(`http://somersault.utopilot.com.cn/${isSil? 'job': 'hilJob'}/task/${jobId}?type=${simType}&id=${taskId}&dataInfo=&taskState=&metricResult=`, '_blank')
+  }
+
   // VIEW
 
   const viewItems = useMemo<AppBarMenuItem[]>(
@@ -171,6 +182,15 @@ export function AppMenu(props: AppMenuProps): JSX.Element {
         key: "export-layout",
         onClick: () => {
           layoutActions.exportToFile();
+          handleNestedMenuClose();
+        },
+      },
+      {
+        type: "item",
+        label: "定位到平台问题",
+        key: "to-platform",
+        onClick: () => {
+          toPlatform()
           handleNestedMenuClose();
         },
       },
