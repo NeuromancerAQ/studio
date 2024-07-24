@@ -36,6 +36,7 @@ import { AppMenu } from "./AppMenu";
 import { CustomWindowControls, CustomWindowControlsProps } from "./CustomWindowControls";
 import { DataSource } from "./DataSource";
 import { SettingsMenu } from "./SettingsMenu";
+import { parseAppURLState } from "@foxglove/studio-base/util/appURLState";
 
 const useStyles = makeStyles<{ debugDragRegion?: boolean }, "avatar">()((
   theme,
@@ -183,10 +184,21 @@ export function AppBar(props: AppBarProps): JSX.Element {
   const [appMenuEl, setAppMenuEl] = useState<undefined | HTMLElement>(undefined);
   const [userAnchorEl, setUserAnchorEl] = useState<undefined | HTMLElement>(undefined);
   const [panelAnchorEl, setPanelAnchorEl] = useState<undefined | HTMLElement>(undefined);
+  const [platformEl, setPlatformEl] = useState<undefined | HTMLElement>(undefined);
 
   const appMenuOpen = Boolean(appMenuEl);
   const userMenuOpen = Boolean(userAnchorEl);
   const panelMenuOpen = Boolean(panelAnchorEl);
+  const platformOpen = Boolean(platformEl);
+
+  const params = parseAppURLState(new URL(window.location.href));
+  const toPlatform = () => {
+    const jobId = params?.jobId || ''
+    const taskId = params?.taskId || ''
+    const isSil = params?.isSil || false
+    const simType = params?.simType || ''
+    window.open(`http://somersault.utopilot.com.cn/${isSil? 'job': 'hilJob'}/task/${jobId}?type=${simType}&id=${taskId}&dataInfo=&taskState=&metricResult=`, '_blank')
+  }
 
   return (
     <>
@@ -198,6 +210,9 @@ export function AppBar(props: AppBarProps): JSX.Element {
                 className={cx(classes.logo, { "Mui-selected": appMenuOpen })}
                 color="inherit"
                 id="app-menu-button"
+                style={{
+                  padding: '10px'
+                }}
                 title="Menu"
                 aria-controls={appMenuOpen ? "app-menu" : undefined}
                 aria-haspopup="true"
@@ -208,8 +223,8 @@ export function AppBar(props: AppBarProps): JSX.Element {
                 }}
               >
                 <img color="primary" src={require("@foxglove/studio-base/assets/images/logo/somersault.png?url")} style={{
-                  width: '24px',
-                  height: '24px',
+                  width: '20px',
+                  height: '20px',
                   marginRight: '5px'
                 }} />
                 {/*<FoxgloveLogo fontSize="inherit" color="inherit" />*/}
@@ -242,6 +257,30 @@ export function AppBar(props: AppBarProps): JSX.Element {
               >
                 <SlideAdd24Regular />
               </AppBarIconButton>
+              {
+                params?.jobId ? <IconButton
+                  className={cx(classes.logo, { "Mui-selected": platformOpen })}
+                  color="inherit"
+                  id="app-menu-button-platform"
+                  style={{
+                    padding: '10px'
+                  }}
+                  title="Platform"
+                  aria-controls={platformOpen ? "app-menu" : undefined}
+                  aria-haspopup="true"
+                  aria-expanded={platformOpen ? "true" : undefined}
+                  data-tourid="app-menu-button"
+                  onClick={(event) => {
+                    setPlatformEl(event.currentTarget)
+                    toPlatform()
+                  }}
+                >
+                  <img color="primary" src={require("@foxglove/studio-base/assets/images/common/platform.svg?url")} style={{
+                    width: '20px',
+                    height: '20px'
+                  }} />
+                </IconButton> : <></>
+              }
             </div>
           </div>
 
