@@ -62,18 +62,19 @@ export const defaultLayout: LayoutData =
     "configById": {
       "3D!mm4c9j": {
         "cameraState": {
-          "distance": 58.726522473829384,
           "perspective": true,
-          "phi": 52.42807669922526,
+          "distance": 114.40036651308522,
+          "phi": 80.95859844809092,
+          "thetaOffset": 116.93148521261097,
+          "targetOffset": [
+            17.03063031782711,
+            -14.707218763823033,
+            -2.748858725537178e-15
+          ],
           "target": [
             0,
             0,
             0
-          ],
-          "targetOffset": [
-            9.399959556738759,
-            -5.160648434173864,
-            -7.792368618470124e-16
           ],
           "targetOrientation": [
             0,
@@ -81,7 +82,6 @@ export const defaultLayout: LayoutData =
             0,
             1
           ],
-          "thetaOffset": 101.43135128770288,
           "fovy": 45,
           "near": 0.5,
           "far": 5000
@@ -123,9 +123,11 @@ export const defaultLayout: LayoutData =
           },
           "/perception/perception_freespace": {
             "visible": true,
-            "colorField": "distance",
-            "colorMode": "colormap",
-            "colorMap": "rainbow"
+            "colorField": "z",
+            "colorMode": "flat",
+            "colorMap": "rainbow",
+            "flatColor": "#ff8b00ff",
+            "pointSize": 4
           },
           "/perception/perception_gates": {
             "visible": true
@@ -158,7 +160,7 @@ export const defaultLayout: LayoutData =
             "visible": true
           },
           "/perception/fused_objects_truth": {
-            "visible": false
+            "visible": true
           },
           "/prediction/prediction_obstacles": {
             "visible": true
@@ -173,6 +175,16 @@ export const defaultLayout: LayoutData =
             "visible": false
           },
           "/perception/camera_locator_sign": {
+            "visible": true
+          },
+          "/perception/lidar_freespace": {
+            "visible": true,
+            "colorField": "z",
+            "colorMode": "flat",
+            "colorMap": "rainbow",
+            "flatColor": "#24ff00ff"
+          },
+          "/planning/planning_visualization/interactive_decision": {
             "visible": true
           }
         },
@@ -192,9 +204,9 @@ export const defaultLayout: LayoutData =
       "3D!wwlbug": {
         "cameraState": {
           "perspective": true,
-          "distance": 172.44022209457052,
-          "phi": 59.67700915375942,
-          "thetaOffset": 85.66033687940879,
+          "distance": 172.44022209456568,
+          "phi": 71.65599339193808,
+          "thetaOffset": 106.1507046552412,
           "targetOffset": [
             22.1256620742641,
             -11.669433382914214,
@@ -259,9 +271,11 @@ export const defaultLayout: LayoutData =
           },
           "/perception/perception_freespace": {
             "visible": true,
-            "colorField": "x",
-            "colorMode": "colormap",
-            "colorMap": "turbo"
+            "colorField": "z",
+            "colorMode": "flat",
+            "colorMap": "rainbow",
+            "flatColor": "#ff8b00ff",
+            "pointSize": 4
           },
           "/perception/fused_objects_truth": {
             "visible": true
@@ -771,9 +785,11 @@ export const defaultLayout: LayoutData =
           },
           "/perception/perception_freespace": {
             "visible": true,
-            "colorField": "x",
-            "colorMode": "colormap",
-            "colorMap": "turbo"
+            "colorField": "z",
+            "colorMode": "flat",
+            "colorMap": "rainbow",
+            "flatColor": "#ff8b00ff",
+            "pointSize": 4
           },
           "/perception/perception_gates": {
             "visible": true
@@ -1329,13 +1345,13 @@ export const defaultLayout: LayoutData =
       "3D!1jfwpeu": {
         "cameraState": {
           "perspective": true,
-          "distance": 147.84593541833777,
-          "phi": 59.350483523976244,
+          "distance": 147.8459354183341,
+          "phi": 59.35048352397628,
           "thetaOffset": 133.66035182679366,
           "targetOffset": [
-            22.206033300689025,
-            -11.746131459945142,
-            9.929748334668052e-16
+            11.219916331202567,
+            -8.34335282583491,
+            7.202267331698459e-16
           ],
           "target": [
             0,
@@ -1396,9 +1412,11 @@ export const defaultLayout: LayoutData =
           },
           "/perception/perception_freespace": {
             "visible": true,
-            "colorField": "x",
-            "colorMode": "colormap",
-            "colorMap": "turbo"
+            "colorField": "z",
+            "colorMode": "flat",
+            "colorMap": "rainbow",
+            "flatColor": "#ff8b00ff",
+            "pointSize": 4
           },
           "/perception/fused_objects_truth": {
             "visible": true
@@ -1462,7 +1480,8 @@ export const defaultLayout: LayoutData =
         "transforms": {},
         "topics": {
           "/map": {
-            "visible": true
+            "visible": false,
+            "color": "#00000052"
           },
           "/perception/fused_objects": {
             "visible": true
@@ -1519,7 +1538,7 @@ export const defaultLayout: LayoutData =
         "transforms": {},
         "topics": {
           "/map": {
-            "visible": true
+            "visible": false
           },
           "/perception/fused_objects": {
             "visible": true
@@ -1576,7 +1595,7 @@ export const defaultLayout: LayoutData =
         "transforms": {},
         "topics": {
           "/map": {
-            "visible": true
+            "visible": false
           },
           "/perception/fused_objects": {
             "visible": true
@@ -1633,7 +1652,7 @@ export const defaultLayout: LayoutData =
         "transforms": {},
         "topics": {
           "/map": {
-            "visible": true
+            "visible": false
           },
           "/perception/fused_objects": {
             "visible": true
@@ -1690,7 +1709,7 @@ export const defaultLayout: LayoutData =
         "transforms": {},
         "topics": {
           "/map": {
-            "visible": true
+            "visible": false
           },
           "/perception/fused_objects": {
             "visible": true
@@ -1747,7 +1766,7 @@ export const defaultLayout: LayoutData =
         "transforms": {},
         "topics": {
           "/map": {
-            "visible": true
+            "visible": false
           },
           "/perception/fused_objects": {
             "visible": true
@@ -1804,7 +1823,7 @@ export const defaultLayout: LayoutData =
         "transforms": {},
         "topics": {
           "/map": {
-            "visible": true
+            "visible": false
           },
           "/perception/fused_objects": {
             "visible": true
@@ -1887,9 +1906,11 @@ export const defaultLayout: LayoutData =
           },
           "/perception/perception_freespace": {
             "visible": true,
-            "colorField": "x",
-            "colorMode": "colormap",
-            "colorMap": "turbo"
+            "colorField": "z",
+            "colorMode": "flat",
+            "colorMap": "rainbow",
+            "flatColor": "#ff8b00ff",
+            "pointSize": 4
           },
           "/perception/perception_gates": {
             "visible": true
@@ -1994,6 +2015,14 @@ export const defaultLayout: LayoutData =
           },
           "/perception/fused_objects": {
             "visible": true
+          },
+          "/perception/perception_freespace": {
+            "visible": true,
+            "colorField": "z",
+            "colorMode": "flat",
+            "colorMap": "rainbow",
+            "flatColor": "#ff8b00ff",
+            "pointSize": 4
           }
         },
         "layers": {},
@@ -2051,6 +2080,14 @@ export const defaultLayout: LayoutData =
           },
           "/perception/fused_objects": {
             "visible": true
+          },
+          "/perception/perception_freespace": {
+            "visible": true,
+            "colorField": "z",
+            "colorMode": "flat",
+            "colorMap": "rainbow",
+            "flatColor": "#ff8b00ff",
+            "pointSize": 4
           }
         },
         "layers": {},
@@ -2225,6 +2262,14 @@ export const defaultLayout: LayoutData =
           },
           "/perception/fused_objects_org": {
             "visible": false
+          },
+          "/perception/perception_freespace": {
+            "visible": true,
+            "colorField": "z",
+            "colorMode": "flat",
+            "colorMap": "rainbow",
+            "flatColor": "#ff8b00ff",
+            "pointSize": 4
           }
         },
         "layers": {},
@@ -2282,6 +2327,14 @@ export const defaultLayout: LayoutData =
           },
           "/perception/fused_objects": {
             "visible": true
+          },
+          "/perception/perception_freespace": {
+            "visible": true,
+            "colorField": "z",
+            "colorMode": "flat",
+            "colorMap": "rainbow",
+            "flatColor": "#ff8b00ff",
+            "pointSize": 4
           }
         },
         "layers": {},
@@ -2579,7 +2632,8 @@ export const defaultLayout: LayoutData =
                 "direction": "column",
                 "splitPercentage": 65.8632760648662
               },
-              "direction": "row"
+              "direction": "row",
+              "splitPercentage": 32.75783198311863
             }
           },
           {
@@ -2642,11 +2696,11 @@ export const defaultLayout: LayoutData =
           "first": "Dashboard!2p3l8b8",
           "second": "StPoligonGraph!42u2mvn",
           "direction": "column",
-          "splitPercentage": 64.48857317783249
+          "splitPercentage": 71.73913043478261
         },
         "direction": "row",
-        "splitPercentage": 57.84597199910684
+        "splitPercentage": 59.95044608373108
       },
-      "splitPercentage": 13.966685818125676
+      "splitPercentage": 11.981865284974093
     }
   } as const);

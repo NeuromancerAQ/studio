@@ -126,9 +126,8 @@ export function AppMenu(props: AppMenuProps): JSX.Element {
     const params = parseAppURLState(new URL(window.location.href));
     const jobId = params?.jobId || ''
     const taskId = params?.taskId || ''
-    const isSil = params?.isSil || false
     const simType = params?.simType || ''
-    window.open(`http://somersault.utopilot.com.cn/${isSil? 'job': 'hilJob'}/task/${jobId}?type=${simType}&id=${taskId}&dataInfo=&taskState=&metricResult=`, '_blank')
+    window.open(`http://somersault.utopilot.com.cn/${simType === 'HIL' ? 'hilJob': 'job'}/task/${jobId}?type=${simType}&id=${taskId}&dataInfo=&taskState=&metricResult=`, '_blank')
   }
 
   // VIEW
