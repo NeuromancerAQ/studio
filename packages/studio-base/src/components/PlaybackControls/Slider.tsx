@@ -26,6 +26,8 @@ type Props = {
   renderSlider?: (value?: number) => ReactNode;
   A2M?: any;
   M2A?: any;
+  R2A?: any;
+  A2R?: any;
 };
 
 const useStyles = makeStyles()((theme) => ({
@@ -50,7 +52,7 @@ const useStyles = makeStyles()((theme) => ({
     height: "100%",
   },
   markerA2M: {
-    label: "A2M",
+    label: "智驾转人工",
     backgroundColor: '#ff80d6',
     position: "absolute",
     height: 16,
@@ -59,8 +61,26 @@ const useStyles = makeStyles()((theme) => ({
     transform: "translate(-50%, 0)",
   },
   markerM2A: {
-    label: "M2A",
+    label: "人工转智驾",
     backgroundColor: 'blue',
+    position: "absolute",
+    height: 16,
+    borderRadius: 1,
+    width: 2,
+    transform: "translate(-50%, 0)",
+  },
+  markerR2A: {
+    label: "远控转智驾",
+    backgroundColor: '#acc7c7',
+    position: "absolute",
+    height: 16,
+    borderRadius: 1,
+    width: 2,
+    transform: "translate(-50%, 0)",
+  },
+  markerA2R: {
+    label: "智驾转远控",
+    backgroundColor: '#de9f6f',
     position: "absolute",
     height: 16,
     borderRadius: 1,
@@ -92,7 +112,9 @@ export default function Slider(props: Props): JSX.Element {
     onHoverOut,
     onChange,
     A2M,
-    M2A
+    M2A,
+    A2R,
+    R2A
   } = props;
   const { classes, cx } = useStyles();
 
@@ -213,6 +235,16 @@ export default function Slider(props: Props): JSX.Element {
       {
         M2A.map((val: number | undefined, index) => {
           return RenderItem(val, classes.markerM2A, index)
+        })
+      }
+      {
+        A2R.map((val: number | undefined, index) => {
+          return RenderItem(val, classes.markerA2R, index)
+        })
+      }
+      {
+        R2A.map((val: number | undefined, index) => {
+          return RenderItem(val, classes.markerR2A, index)
         })
       }
     </div>

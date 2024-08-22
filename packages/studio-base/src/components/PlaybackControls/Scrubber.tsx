@@ -64,6 +64,8 @@ const selectPresence = (ctx: MessagePipelineContext) => ctx.playerState.presence
 
 const selectA2M = (ctx: MessagePipelineContext) => ctx.playerState.activeData?.A2M;
 const selectM2A = (ctx: MessagePipelineContext) => ctx.playerState.activeData?.M2A;
+const selectA2R = (ctx: MessagePipelineContext) => ctx.playerState.activeData?.A2R;
+const selectR2A = (ctx: MessagePipelineContext) => ctx.playerState.activeData?.R2A;
 const setPlayerState = (ctx: MessagePipelineContext) => ctx.setPlayerState;
 
 const mcapUrl = parseAppURLState(new URL(window.location.href))?.dsParams?.url || "";
@@ -101,6 +103,8 @@ export default function Scrubber(props: Props): JSX.Element {
   const ranges = useMessagePipeline(selectRanges);
   const A2M = useMessagePipeline(selectA2M) || "";
   const M2A = useMessagePipeline(selectM2A) || "";
+  const A2R = useMessagePipeline(selectA2R) || "";
+  const R2A = useMessagePipeline(selectR2A) || "";
   const setNewPlayerState = useMessagePipeline(setPlayerState);
 
   const [a2mArray, setA2mArray] = useState(A2M.split(" ").map(val => {
@@ -109,6 +113,16 @@ export default function Scrubber(props: Props): JSX.Element {
       ? toSec(subtractTimes(time, startTime)) / toSec(subtractTimes(endTime, startTime)) : undefined;
   }));
   const [m2aArray, setM2aArray] = useState(M2A.split(" ").map(val => {
+    const time = formatFoxgloveTime(val);
+    return time && startTime && endTime
+      ? toSec(subtractTimes(time, startTime)) / toSec(subtractTimes(endTime, startTime)) : undefined;
+  }));
+  const [a2rArray, setA2rArray] = useState(A2R.split(" ").map(val => {
+    const time = formatFoxgloveTime(val);
+    return time && startTime && endTime
+      ? toSec(subtractTimes(time, startTime)) / toSec(subtractTimes(endTime, startTime)) : undefined;
+  }));
+  const [r2aArray, setR2aArray] = useState(R2A.split(" ").map(val => {
     const time = formatFoxgloveTime(val);
     return time && startTime && endTime
       ? toSec(subtractTimes(time, startTime)) / toSec(subtractTimes(endTime, startTime)) : undefined;
@@ -142,6 +156,28 @@ export default function Scrubber(props: Props): JSX.Element {
                   ? toSec(subtractTimes(time, start)) / toSec(subtractTimes(end, start)) : undefined;
               });
               setM2aArray(m2aArr);
+            }
+          }
+          if(data.a_to_r) {
+            const a2r = data.a_to_r.join(" ") || "";
+            if (a2r) {
+              const a2rArr = a2r.split(" ").map(val => {
+                const time = formatFoxgloveTime(val);
+                return time && start && end
+                  ? toSec(subtractTimes(time, start)) / toSec(subtractTimes(end, start)) : undefined;
+              });
+              setA2rArray(a2rArr);
+            }
+          }
+          if(data.r_to_a) {
+            const r2a = data.r_to_a.join(" ") || "";
+            if (r2a) {
+              const r2aArr = r2a.split(" ").map(val => {
+                const time = formatFoxgloveTime(val);
+                return time && start && end
+                  ? toSec(subtractTimes(time, start)) / toSec(subtractTimes(end, start)) : undefined;
+              });
+              setR2aArray(r2aArr);
             }
           }
           if(data.bag_name) {
@@ -298,6 +334,8 @@ export default function Scrubber(props: Props): JSX.Element {
             renderSlider={renderSlider}
             A2M={a2mArray}
             M2A={m2aArray}
+            R2A={r2aArray}
+            A2R={a2rArray}
           />
         </Stack>
         <EventsOverlay />

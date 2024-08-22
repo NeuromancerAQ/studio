@@ -210,6 +210,8 @@ export type PlayerStateActiveData = {
 
   A2M?: string | "";
   M2A?: string | "";
+  R2A?: string | "";
+  A2R?: string | "";
 };
 
 // Represents a ROS topic, though the actual data does not need to come from a ROS system.
