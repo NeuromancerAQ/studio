@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, ReactNode, useState, useLayoutEffect } 
 import { makeStyles } from "tss-react/mui";
 
 import { scaleValue } from "@foxglove/den/math";
+import { Fade, Tooltip } from "@mui/material";
 
 export type HoverOverEvent = {
   /** Hovered `fraction` value */
@@ -52,40 +53,48 @@ const useStyles = makeStyles()((theme) => ({
     height: "100%",
   },
   markerA2M: {
-    label: "智驾转人工",
+    label: "A2M",
+    CN: "智驾转人工",
     backgroundColor: '#ff80d6',
     position: "absolute",
     height: 16,
     borderRadius: 1,
-    width: 2,
+    width: 3,
     transform: "translate(-50%, 0)",
+    cursor: "pointer"
   },
   markerM2A: {
-    label: "人工转智驾",
-    backgroundColor: 'blue',
+    label: "M2A",
+    CN: "人工转智驾",
+    backgroundColor: '#4979bb',
     position: "absolute",
     height: 16,
     borderRadius: 1,
-    width: 2,
+    width: 3,
     transform: "translate(-50%, 0)",
+    cursor: "pointer"
   },
   markerR2A: {
-    label: "远控转智驾",
-    backgroundColor: '#acc7c7',
+    label: "R2A",
+    CN: "远控转智驾",
+    backgroundColor: '#6eaa6f',
     position: "absolute",
     height: 16,
     borderRadius: 1,
-    width: 2,
+    width: 3,
     transform: "translate(-50%, 0)",
+    cursor: "pointer"
   },
   markerA2R: {
-    label: "智驾转远控",
-    backgroundColor: '#de9f6f',
+    label: "A2R",
+    CN: "智驾转远控",
+    backgroundColor: '#dd6a46',
     position: "absolute",
     height: 16,
     borderRadius: 1,
-    width: 2,
+    width: 3,
     transform: "translate(-50%, 0)",
+    cursor: "pointer"
   },
 }));
 
@@ -96,11 +105,23 @@ function defaultRenderSlider(value: number | undefined, className: string): Reac
   return <div className={className} style={{ width: `${value * 100}%` }} />;
 }
 
-function RenderItem(value: number | undefined, className: string, index: number): ReactNode {
+function RenderItem(value: number | undefined, className: string, title:string, index: number): ReactNode {
   if (value == undefined || isNaN(value)) {
     return ReactNull;
   }
-  return <div className={className} key={index} style={{ left: `${value * 100}%` }} />;
+  return (
+      <Tooltip
+        placement="top"
+        disableInteractive
+        TransitionComponent={Fade}
+        TransitionProps={{ timeout: 0 }}
+        title={title}
+        arrow={false}
+        enterDelay={200}
+      >
+        <div className={className} key={index} style={{ left: `${value * 100}%` }} />
+      </Tooltip>
+    );
 }
 
 export default function Slider(props: Props): JSX.Element {
@@ -229,22 +250,22 @@ export default function Slider(props: Props): JSX.Element {
       {renderSlider(fraction, classes.range)}
       {
         A2M.map((val: number | undefined, index) => {
-          return RenderItem(val, classes.markerA2M, index)
+          return RenderItem(val, classes.markerA2M, '智驾转人工', index)
         })
       }
       {
         M2A.map((val: number | undefined, index) => {
-          return RenderItem(val, classes.markerM2A, index)
+          return RenderItem(val, classes.markerM2A,'人工转智驾', index)
         })
       }
       {
         A2R.map((val: number | undefined, index) => {
-          return RenderItem(val, classes.markerA2R, index)
+          return RenderItem(val, classes.markerA2R, '智驾转远控', index)
         })
       }
       {
         R2A.map((val: number | undefined, index) => {
-          return RenderItem(val, classes.markerR2A, index)
+          return RenderItem(val, classes.markerR2A, '远控转智驾', index)
         })
       }
     </div>
