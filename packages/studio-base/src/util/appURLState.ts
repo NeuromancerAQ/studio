@@ -70,6 +70,7 @@ export function parseAppURLState(url: URL): AppURLState | undefined {
   const taskId = url.searchParams.get("taskId");
   const simType = url.searchParams.get("simType");
   const isSil = url.searchParams.get("isSil");
+  const token = url.searchParams.get("token");
   const dsParams: Record<string, string> = {};
   url.searchParams.forEach((v, k) => {
     if (k && v && k.startsWith("ds.")) {
@@ -86,7 +87,8 @@ export function parseAppURLState(url: URL): AppURLState | undefined {
       jobId,
       taskId,
       simType,
-      isSil
+      isSil,
+      token
     },
     _.isEmpty,
   );

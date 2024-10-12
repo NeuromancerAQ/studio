@@ -22,6 +22,7 @@ import AppConfigurationContext from "./context/AppConfigurationContext";
 import CurrentLayoutProvider from "./providers/CurrentLayoutProvider";
 import PanelCatalogProvider from "./providers/PanelCatalogProvider";
 import { LaunchPreference } from "./screens/LaunchPreference";
+import { parseAppURLState } from "@foxglove/studio-base/util/appURLState";
 
 // Suppress context menu for the entire app except on inputs & textareas.
 function contextMenuHandler(event: MouseEvent) {
@@ -73,6 +74,32 @@ export function StudioApp(): JSX.Element {
     return () => {
       document.removeEventListener("contextmenu", contextMenuHandler);
     };
+  }, []);
+
+
+  useEffect(() => {
+    const params = parseAppURLState(new URL(window.location.href));
+    const token = params?.token || ''
+    fetch('http://36.99.116.208:30677/api/v1/uto/user/test', {
+      method: 'GET',
+      headers: {
+        'token': token,
+        'Content-Type': 'application/json'
+      }
+    }).then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.json();
+    })
+      .then(data => {
+        if (data.code === 'A1308') {
+          window.location.href = 'http://somersault.utopilot.com.cn/login'
+        }
+      })
+      .catch(error => {
+        window.location.href = 'http://somersault.utopilot.com.cn/login'
+      });
   }, []);
 
   return (
