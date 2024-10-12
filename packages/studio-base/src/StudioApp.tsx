@@ -80,7 +80,7 @@ export function StudioApp(): JSX.Element {
   useEffect(() => {
     const params = parseAppURLState(new URL(window.location.href));
     const token = params?.token || ''
-    fetch('http://36.99.116.208:30677/api/v1/uto/user/test', {
+    fetch('http://36.99.116.208:30001/api/v1/uto/user/test', {
       method: 'GET',
       headers: {
         'token': token,
@@ -93,7 +93,7 @@ export function StudioApp(): JSX.Element {
       return response.json();
     })
       .then(data => {
-        if (data.code === 'A1308') {
+        if (data.code === '1308') {
           window.location.href = 'http://somersault.utopilot.com.cn/login'
         }
       })
