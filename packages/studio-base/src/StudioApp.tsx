@@ -76,7 +76,7 @@ export function StudioApp(): JSX.Element {
     };
   }, []);
 
-
+  // 检测跳转过来是否登陆过，未登录过导航到平台登录页，登陆过继续。
   useEffect(() => {
     const params = parseAppURLState(new URL(window.location.href));
     const token = params?.token || ''

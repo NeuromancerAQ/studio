@@ -121,6 +121,7 @@ function Dashboard(): JSX.Element {
       longitudinal_control_mode: -1,
       road_error: 0,
     },
+    horn_on: null
   };
   const topicRosPath: RosPath | undefined = React.useMemo(
     () => parseRosPath(topicPath),
@@ -153,11 +154,23 @@ function Dashboard(): JSX.Element {
       metaMessage.drive_info.trailer_transfer = round(Number(firstCachedMessage.drive_info.trailer_transfer), 3)
       metaMessage.drive_info.acc_y = round(Number(firstCachedMessage.drive_info.acc_y), 3)
       metaMessage.drive_info.yaw_rate = round(Number(firstCachedMessage.drive_info.yaw_rate), 4)
+      metaMessage.horn_on = String(firstCachedMessage.horn_on)
     }
 
       setVehicleInfo(metaMessage);
     }
   }, [firstCachedMessage])
+
+
+  function Circle () {
+    if (vehicleInfo.horn_on === 'true') {
+      return <div className={"uto-circle uto-circle-green"}></div>
+    } else if (vehicleInfo.horn_on === 'false') {
+      return <div className={"uto-circle uto-circle-red"}></div>
+    } else {
+      return <div className={"uto-circle uto-circle-gray"}></div>
+    }
+  }
 
   return (
     <>
@@ -404,6 +417,21 @@ function Dashboard(): JSX.Element {
                     src={require("@foxglove/studio-base/assets/images/VehicleDrivingInformation/breakLight.svg?url")}
                   />
                 }
+              </div>
+            </div>
+          </div>
+          <div style={{
+            padding: '10px'
+          }}>
+            <div className={"tadviz-car-light-info tadviz-row tadviz-between tadviz-align-item-center"}>
+              <div className={"tadviz-row"}>
+                <div className={"tadviz-label"} style={{width: '100px'}}>动力学闭环状态</div>
+                {
+                  Circle()
+                }
+                <div className={"tadviz-value"}>
+                  { vehicleInfo.horn_on }
+                </div>
               </div>
             </div>
           </div>

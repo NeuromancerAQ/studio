@@ -62,19 +62,18 @@ export const defaultLayout: LayoutData =
     "configById": {
       "3D!mm4c9j": {
         "cameraState": {
-          "perspective": true,
-          "distance": 114.40036651308522,
-          "phi": 80.95859844809092,
-          "thetaOffset": 116.93148521261097,
-          "targetOffset": [
-            17.03063031782711,
-            -14.707218763823033,
-            -2.748858725537178e-15
-          ],
+          "distance": 163.81821098847266,
+          "perspective": false,
+          "phi": 44.133157129555585,
           "target": [
             0,
             0,
             0
+          ],
+          "targetOffset": [
+            29.138822067599175,
+            -0.01890365867590854,
+            1.330928237019518e-16
           ],
           "targetOrientation": [
             0,
@@ -82,12 +81,19 @@ export const defaultLayout: LayoutData =
             0,
             1
           ],
+          "thetaOffset": 0.23642880022607546,
           "fovy": 45,
           "near": 0.5,
           "far": 5000
         },
         "followMode": "follow-pose",
-        "scene": {},
+        "scene": {
+          "transforms": {
+            "editable": false,
+            "axisScale": 1
+          },
+          "labelScaleFactor": 1
+        },
         "transforms": {
           "frame:EGO": {
             "visible": false
@@ -96,6 +102,71 @@ export const defaultLayout: LayoutData =
             "visible": false
           },
           "frame:map": {
+            "visible": false
+          },
+          "frame:/cam_bcb": {
+            "visible": false
+          },
+          "frame:/cam_fcf": {
+            "visible": false
+          },
+          "frame:/cam_fcf_far": {
+            "visible": false
+          },
+          "frame:/cam_flb": {
+            "visible": false
+          },
+          "frame:/cam_flf": {
+            "visible": false
+          },
+          "frame:/cam_frb": {
+            "visible": false
+          },
+          "frame:/cam_frf": {
+            "visible": false
+          },
+          "frame:F": {
+            "visible": false
+          },
+          "frame:F_Org": {
+            "visible": false
+          },
+          "frame:Per": {
+            "visible": false
+          },
+          "frame:Per_Org": {
+            "visible": false
+          },
+          "frame:Plan": {
+            "visible": false
+          },
+          "frame:PlanOrg": {
+            "visible": false
+          },
+          "frame:Freespace": {
+            "xyzOffset": [
+              0,
+              null,
+              null
+            ],
+            "visible": false
+          },
+          "frame:LidarFS": {
+            "visible": false
+          },
+          "frame:F_Truth_Org": {
+            "visible": false
+          },
+          "frame:FreespaceTruth": {
+            "visible": false
+          },
+          "frame:Gate": {
+            "visible": false
+          },
+          "frame:ParkingLot": {
+            "visible": false
+          },
+          "frame:PLS": {
             "visible": false
           }
         },
@@ -123,11 +194,11 @@ export const defaultLayout: LayoutData =
           },
           "/perception/perception_freespace": {
             "visible": true,
-            "colorField": "z",
+            "colorField": "_auto_distance",
             "colorMode": "flat",
             "colorMap": "rainbow",
             "flatColor": "#ff8b00ff",
-            "pointSize": 4
+            "pointSize": 5
           },
           "/perception/perception_gates": {
             "visible": true
@@ -181,10 +252,134 @@ export const defaultLayout: LayoutData =
             "visible": true,
             "colorField": "z",
             "colorMode": "flat",
-            "colorMap": "rainbow",
-            "flatColor": "#24ff00ff"
+            "colorMap": "turbo",
+            "flatColor": "#24ff00ff",
+            "pointSize": 5
           },
           "/planning/planning_visualization/interactive_decision": {
+            "visible": true
+          },
+          "/utosim/task_manager/task_request_list": {
+            "visible": true
+          },
+          "/utosim/multi_ego": {
+            "visible": true
+          },
+          "/perception/freespace_truth": {
+            "visible": false,
+            "colorField": "z",
+            "colorMode": "colormap",
+            "colorMap": "turbo"
+          },
+          "/perception/perception_freespace_boundary_layers": {
+            "visible": true
+          },
+          "/planning/planning_visualization_org/interactive_decision_org": {
+            "visible": true
+          },
+          "/region/task_manager/task_request_list": {
+            "visible": true
+          },
+          "/router/routing": {
+            "visible": true
+          },
+          "/utosim/perception/perception_traffic_signals": {
+            "visible": true
+          },
+          "/utosim/task_manager/task_path": {
+            "visible": true
+          },
+          "/sim_viz/locator/vehicle_pose": {
+            "visible": true
+          },
+          "/sim_viz/locator/vehicle_pose_org": {
+            "visible": true
+          },
+          "/sim_viz/perception/camera_locator_sign": {
+            "visible": true
+          },
+          "/sim_viz/perception/freespace_truth": {
+            "visible": false,
+            "colorField": "x",
+            "colorMode": "colormap",
+            "colorMap": "turbo"
+          },
+          "/sim_viz/perception/fused_objects": {
+            "visible": true
+          },
+          "/sim_viz/perception/fused_objects_org": {
+            "visible": true
+          },
+          "/sim_viz/perception/fused_objects_truth": {
+            "visible": true
+          },
+          "/sim_viz/perception/lidar_freespace": {
+            "visible": false
+          },
+          "/sim_viz/perception/perception_freespace": {
+            "visible": true,
+            "colorField": "x",
+            "colorMode": "colormap",
+            "colorMap": "turbo"
+          },
+          "/sim_viz/perception/perception_freespace_boundary_layers": {
+            "visible": true
+          },
+          "/sim_viz/perception/perception_gates": {
+            "visible": true
+          },
+          "/sim_viz/perception/perception_parking_slots": {
+            "visible": true
+          },
+          "/sim_viz/perception/perception_traffic_signals": {
+            "visible": true
+          },
+          "/sim_viz/perception/predicted_objects": {
+            "visible": true
+          },
+          "/sim_viz/perception/predicted_objects_org": {
+            "visible": true
+          },
+          "/sim_viz/planning/planning_visualization": {
+            "visible": false
+          },
+          "/sim_viz/planning/planning_visualization/base": {
+            "visible": true
+          },
+          "/sim_viz/planning/planning_visualization/interactive_decision": {
+            "visible": true
+          },
+          "/sim_viz/planning/planning_visualization/path": {
+            "visible": false
+          },
+          "/sim_viz/planning/planning_visualization_org": {
+            "visible": true
+          },
+          "/sim_viz/planning/planning_visualization_org/base": {
+            "visible": true
+          },
+          "/sim_viz/planning/planning_visualization_org/interactive_decision": {
+            "visible": true
+          },
+          "/sim_viz/prediction/prediction_obstacles": {
+            "visible": true
+          },
+          "/sim_viz/prediction/prediction_obstacles_org": {
+            "visible": true
+          },
+          "/sim_viz/region/task_manager/task_request_list": {
+            "visible": true
+          },
+          "/sim_viz/router/routing": {
+            "visible": true
+          },
+          "/sim_viz/task_manager/task_path": {
+            "visible": true
+          },
+          "/sim_viz/task_manager/task_request_list": {
+            "visible": true
+          },
+          "/sim_viz/planning/planning_visualization/trailer_angle": {
             "visible": true
           }
         },
@@ -204,13 +399,13 @@ export const defaultLayout: LayoutData =
       "3D!wwlbug": {
         "cameraState": {
           "perspective": true,
-          "distance": 172.44022209456568,
-          "phi": 71.65599339193808,
-          "thetaOffset": 106.1507046552412,
+          "distance": 108.6803481878678,
+          "phi": 69.4493384006952,
+          "thetaOffset": 84.71462759744888,
           "targetOffset": [
-            22.1256620742641,
-            -11.669433382914214,
-            9.929748334668052e-16
+            24.585204732890308,
+            4.766618460608199,
+            1.7588491581190615e-15
           ],
           "target": [
             0,
@@ -235,6 +430,33 @@ export const defaultLayout: LayoutData =
             "visible": false
           },
           "frame:EGO": {
+            "visible": false
+          },
+          "frame:F": {
+            "visible": false
+          },
+          "frame:F_Truth_Org": {
+            "visible": false
+          },
+          "frame:Freespace": {
+            "visible": false
+          },
+          "frame:FreespaceTruth": {
+            "visible": false
+          },
+          "frame:Gate": {
+            "visible": false
+          },
+          "frame:ParkingLot": {
+            "visible": false
+          },
+          "frame:Per": {
+            "visible": false
+          },
+          "frame:Plan": {
+            "visible": false
+          },
+          "frame:PLS": {
             "visible": false
           }
         },
@@ -293,6 +515,129 @@ export const defaultLayout: LayoutData =
             "visible": true
           },
           "/locator/vehicle_pose": {
+            "visible": true
+          },
+          "/perception/perception_freespace_boundary_layers": {
+            "visible": true
+          },
+          "/planning/planning_visualization/interactive_decision": {
+            "visible": true
+          },
+          "/planning/planning_visualization/path": {
+            "visible": false
+          },
+          "/planning/planning_visualization_org/interactive_decision_org": {
+            "visible": true
+          },
+          "/prediction/prediction_obstacles": {
+            "visible": true
+          },
+          "/prediction/prediction_obstacles_org": {
+            "visible": true
+          },
+          "/region/task_manager/task_request_list": {
+            "visible": true
+          },
+          "/router/routing": {
+            "visible": true
+          },
+          "/sensor_table/sensor_table": {
+            "visible": true
+          },
+          "/utosim/perception/perception_traffic_signals": {
+            "visible": true
+          },
+          "/utosim/task_manager/task_path": {
+            "visible": true
+          },
+          "/utosim/task_manager/task_request_list": {
+            "visible": true
+          },
+          "/sim_viz/locator/vehicle_pose": {
+            "visible": true
+          },
+          "/sim_viz/locator/vehicle_pose_org": {
+            "visible": true
+          },
+          "/sim_viz/perception/camera_locator_sign": {
+            "visible": true
+          },
+          "/sim_viz/perception/freespace_truth": {
+            "visible": false,
+            "colorField": "x",
+            "colorMode": "colormap",
+            "colorMap": "turbo"
+          },
+          "/sim_viz/perception/fused_objects": {
+            "visible": true
+          },
+          "/sim_viz/perception/fused_objects_org": {
+            "visible": true
+          },
+          "/sim_viz/perception/fused_objects_truth": {
+            "visible": true
+          },
+          "/sim_viz/perception/perception_freespace": {
+            "visible": true,
+            "colorField": "x",
+            "colorMode": "colormap",
+            "colorMap": "turbo"
+          },
+          "/sim_viz/perception/perception_freespace_boundary_layers": {
+            "visible": true
+          },
+          "/sim_viz/perception/perception_gates": {
+            "visible": true
+          },
+          "/sim_viz/perception/perception_parking_slots": {
+            "visible": true
+          },
+          "/sim_viz/perception/perception_traffic_signals": {
+            "visible": true
+          },
+          "/sim_viz/perception/predicted_objects": {
+            "visible": true
+          },
+          "/sim_viz/perception/predicted_objects_org": {
+            "visible": true
+          },
+          "/sim_viz/planning/planning_visualization": {
+            "visible": true
+          },
+          "/sim_viz/planning/planning_visualization/base": {
+            "visible": true
+          },
+          "/sim_viz/planning/planning_visualization/interactive_decision": {
+            "visible": true
+          },
+          "/sim_viz/planning/planning_visualization/trailer_angle": {
+            "visible": true
+          },
+          "/sim_viz/planning/planning_visualization_org": {
+            "visible": true
+          },
+          "/sim_viz/planning/planning_visualization_org/base": {
+            "visible": true
+          },
+          "/sim_viz/planning/planning_visualization_org/interactive_decision": {
+            "visible": true
+          },
+          "/sim_viz/prediction/prediction_obstacles": {
+            "visible": true
+          },
+          "/sim_viz/prediction/prediction_obstacles_org": {
+            "visible": true
+          },
+          "/sim_viz/region/task_manager/task_request_list": {
+            "visible": true
+          },
+          "/sim_viz/router/routing": {
+            "visible": true
+          },
+          "/sim_viz/task_manager/task_path": {
+            "visible": true
+          },
+          "/sim_viz/task_manager/task_request_list": {
             "visible": true
           }
         },
@@ -731,12 +1076,12 @@ export const defaultLayout: LayoutData =
       "3D!49s3i8s": {
         "cameraState": {
           "perspective": true,
-          "distance": 88.52082285122258,
+          "distance": 88.52082285122253,
           "phi": 42.85718470982174,
           "thetaOffset": 129.34285714285792,
           "targetOffset": [
-            1.8695588684909588,
-            -0.4070879067037742,
+            1.9469135875157775,
+            -0.31272300709162704,
             2.2482280961763336e-16
           ],
           "target": [
@@ -761,6 +1106,33 @@ export const defaultLayout: LayoutData =
             "visible": false
           },
           "frame:EGO": {
+            "visible": false
+          },
+          "frame:F": {
+            "visible": false
+          },
+          "frame:F_Truth_Org": {
+            "visible": false
+          },
+          "frame:Freespace": {
+            "visible": false
+          },
+          "frame:FreespaceTruth": {
+            "visible": false
+          },
+          "frame:Gate": {
+            "visible": false
+          },
+          "frame:ParkingLot": {
+            "visible": false
+          },
+          "frame:Per": {
+            "visible": false
+          },
+          "frame:Plan": {
+            "visible": false
+          },
+          "frame:PLS": {
             "visible": false
           }
         },
@@ -843,6 +1215,138 @@ export const defaultLayout: LayoutData =
             "visible": true
           },
           "/calib/cam_frb": {
+            "visible": true
+          },
+          "/calib/cam_flf": {
+            "visible": true
+          },
+          "/calib/cam_frf": {
+            "visible": true
+          },
+          "/perception/camera_locator_sign": {
+            "visible": false
+          },
+          "/perception/perception_freespace_boundary_layers": {
+            "visible": true
+          },
+          "/planning/planning_visualization/interactive_decision": {
+            "visible": true
+          },
+          "/planning/planning_visualization/path": {
+            "visible": false
+          },
+          "/planning/planning_visualization_org/interactive_decision_org": {
+            "visible": true
+          },
+          "/prediction/prediction_obstacles": {
+            "visible": true
+          },
+          "/prediction/prediction_obstacles_org": {
+            "visible": true
+          },
+          "/region/task_manager/task_request_list": {
+            "visible": true
+          },
+          "/router/routing": {
+            "visible": true
+          },
+          "/sensor_table/sensor_table": {
+            "visible": true
+          },
+          "/utosim/perception/perception_traffic_signals": {
+            "visible": true
+          },
+          "/utosim/task_manager/task_path": {
+            "visible": true
+          },
+          "/utosim/task_manager/task_request_list": {
+            "visible": true
+          },
+          "/sim_viz/locator/vehicle_pose": {
+            "visible": true
+          },
+          "/sim_viz/locator/vehicle_pose_org": {
+            "visible": true
+          },
+          "/sim_viz/perception/camera_locator_sign": {
+            "visible": true
+          },
+          "/sim_viz/perception/freespace_truth": {
+            "visible": false,
+            "colorField": "x",
+            "colorMode": "colormap",
+            "colorMap": "turbo"
+          },
+          "/sim_viz/perception/fused_objects": {
+            "visible": true
+          },
+          "/sim_viz/perception/fused_objects_org": {
+            "visible": true
+          },
+          "/sim_viz/perception/fused_objects_truth": {
+            "visible": true
+          },
+          "/sim_viz/perception/lidar_freespace": {
+            "visible": false
+          },
+          "/sim_viz/perception/perception_freespace": {
+            "visible": true,
+            "colorField": "x",
+            "colorMode": "colormap",
+            "colorMap": "turbo"
+          },
+          "/sim_viz/perception/perception_gates": {
+            "visible": true
+          },
+          "/sim_viz/perception/perception_freespace_boundary_layers": {
+            "visible": true
+          },
+          "/sim_viz/perception/perception_parking_slots": {
+            "visible": true
+          },
+          "/sim_viz/perception/perception_traffic_signals": {
+            "visible": true
+          },
+          "/sim_viz/perception/predicted_objects": {
+            "visible": true
+          },
+          "/sim_viz/perception/predicted_objects_org": {
+            "visible": true
+          },
+          "/sim_viz/planning/planning_visualization/base": {
+            "visible": true
+          },
+          "/sim_viz/planning/planning_visualization/interactive_decision": {
+            "visible": true
+          },
+          "/sim_viz/planning/planning_visualization/trailer_angle": {
+            "visible": true
+          },
+          "/sim_viz/planning/planning_visualization_org": {
+            "visible": true
+          },
+          "/sim_viz/planning/planning_visualization_org/base": {
+            "visible": true
+          },
+          "/sim_viz/planning/planning_visualization_org/interactive_decision": {
+            "visible": true
+          },
+          "/sim_viz/prediction/prediction_obstacles": {
+            "visible": true
+          },
+          "/sim_viz/prediction/prediction_obstacles_org": {
+            "visible": true
+          },
+          "/sim_viz/region/task_manager/task_request_list": {
+            "visible": true
+          },
+          "/sim_viz/router/routing": {
+            "visible": true
+          },
+          "/sim_viz/task_manager/task_path": {
+            "visible": true
+          },
+          "/sim_viz/task_manager/task_request_list": {
             "visible": true
           }
         },
@@ -1344,19 +1848,18 @@ export const defaultLayout: LayoutData =
       },
       "3D!1jfwpeu": {
         "cameraState": {
+          "distance": 147.8459354183339,
           "perspective": true,
-          "distance": 147.8459354183341,
-          "phi": 59.35048352397628,
-          "thetaOffset": 133.66035182679366,
-          "targetOffset": [
-            11.219916331202567,
-            -8.34335282583491,
-            7.202267331698459e-16
-          ],
+          "phi": 59.35048352397627,
           "target": [
             0,
             0,
             0
+          ],
+          "targetOffset": [
+            11.219916331202567,
+            -8.34335282583491,
+            7.202267331698459e-16
           ],
           "targetOrientation": [
             0,
@@ -1364,6 +1867,7 @@ export const defaultLayout: LayoutData =
             0,
             1
           ],
+          "thetaOffset": 133.66035182679366,
           "fovy": 45,
           "near": 0.5,
           "far": 5000
@@ -1376,6 +1880,33 @@ export const defaultLayout: LayoutData =
             "visible": false
           },
           "frame:EGO": {
+            "visible": false
+          },
+          "frame:F": {
+            "visible": false
+          },
+          "frame:F_Truth_Org": {
+            "visible": false
+          },
+          "frame:Freespace": {
+            "visible": false
+          },
+          "frame:FreespaceTruth": {
+            "visible": false
+          },
+          "frame:Gate": {
+            "visible": false
+          },
+          "frame:ParkingLot": {
+            "visible": false
+          },
+          "frame:Per": {
+            "visible": false
+          },
+          "frame:Plan": {
+            "visible": false
+          },
+          "frame:PLS": {
             "visible": false
           }
         },
@@ -1435,6 +1966,129 @@ export const defaultLayout: LayoutData =
           },
           "/locator/vehicle_pose": {
             "visible": true
+          },
+          "/perception/camera_locator_sign": {
+            "visible": true
+          },
+          "/perception/perception_freespace_boundary_layers": {
+            "visible": true
+          },
+          "/planning/planning_visualization/interactive_decision": {
+            "visible": true
+          },
+          "/planning/planning_visualization_org/interactive_decision_org": {
+            "visible": true
+          },
+          "/prediction/prediction_obstacles": {
+            "visible": true
+          },
+          "/prediction/prediction_obstacles_org": {
+            "visible": true
+          },
+          "/region/task_manager/task_request_list": {
+            "visible": true
+          },
+          "/router/routing": {
+            "visible": true
+          },
+          "/utosim/perception/perception_traffic_signals": {
+            "visible": true
+          },
+          "/utosim/task_manager/task_path": {
+            "visible": true
+          },
+          "/utosim/task_manager/task_request_list": {
+            "visible": true
+          },
+          "/sim_viz/locator/vehicle_pose": {
+            "visible": true
+          },
+          "/sim_viz/locator/vehicle_pose_org": {
+            "visible": true
+          },
+          "/sim_viz/perception/camera_locator_sign": {
+            "visible": true
+          },
+          "/sim_viz/perception/freespace_truth": {
+            "visible": false,
+            "colorField": "x",
+            "colorMode": "colormap",
+            "colorMap": "turbo"
+          },
+          "/sim_viz/perception/fused_objects": {
+            "visible": true
+          },
+          "/sim_viz/perception/fused_objects_org": {
+            "visible": true
+          },
+          "/sim_viz/perception/fused_objects_truth": {
+            "visible": true
+          },
+          "/sim_viz/perception/lidar_freespace": {
+            "visible": false
+          },
+          "/sim_viz/perception/perception_freespace": {
+            "visible": true,
+            "colorField": "x",
+            "colorMode": "colormap",
+            "colorMap": "turbo"
+          },
+          "/sim_viz/perception/perception_freespace_boundary_layers": {
+            "visible": true
+          },
+          "/sim_viz/perception/perception_gates": {
+            "visible": true
+          },
+          "/sim_viz/perception/perception_parking_slots": {
+            "visible": true
+          },
+          "/sim_viz/perception/perception_traffic_signals": {
+            "visible": true
+          },
+          "/sim_viz/perception/predicted_objects": {
+            "visible": true
+          },
+          "/sim_viz/perception/predicted_objects_org": {
+            "visible": true
+          },
+          "/sim_viz/planning/planning_visualization/base": {
+            "visible": true
+          },
+          "/sim_viz/planning/planning_visualization/interactive_decision": {
+            "visible": true
+          },
+          "/sim_viz/planning/planning_visualization/path": {
+            "visible": false
+          },
+          "/sim_viz/planning/planning_visualization/trailer_angle": {
+            "visible": true
+          },
+          "/sim_viz/planning/planning_visualization_org": {
+            "visible": true
+          },
+          "/sim_viz/planning/planning_visualization_org/base": {
+            "visible": true
+          },
+          "/sim_viz/planning/planning_visualization_org/interactive_decision": {
+            "visible": true
+          },
+          "/sim_viz/prediction/prediction_obstacles": {
+            "visible": true
+          },
+          "/sim_viz/prediction/prediction_obstacles_org": {
+            "visible": true
+          },
+          "/sim_viz/region/task_manager/task_request_list": {
+            "visible": true
+          },
+          "/sim_viz/router/routing": {
+            "visible": true
+          },
+          "/sim_viz/task_manager/task_path": {
+            "visible": true
+          },
+          "/sim_viz/task_manager/task_request_list": {
+            "visible": true
           }
         },
         "layers": {},
@@ -1480,7 +2134,7 @@ export const defaultLayout: LayoutData =
         "transforms": {},
         "topics": {
           "/map": {
-            "visible": false,
+            "visible": true,
             "color": "#00000052"
           },
           "/perception/fused_objects": {
@@ -1538,7 +2192,7 @@ export const defaultLayout: LayoutData =
         "transforms": {},
         "topics": {
           "/map": {
-            "visible": false
+            "visible": true
           },
           "/perception/fused_objects": {
             "visible": true
@@ -1595,7 +2249,7 @@ export const defaultLayout: LayoutData =
         "transforms": {},
         "topics": {
           "/map": {
-            "visible": false
+            "visible": true
           },
           "/perception/fused_objects": {
             "visible": true
@@ -1652,7 +2306,7 @@ export const defaultLayout: LayoutData =
         "transforms": {},
         "topics": {
           "/map": {
-            "visible": false
+            "visible": true
           },
           "/perception/fused_objects": {
             "visible": true
@@ -1709,7 +2363,7 @@ export const defaultLayout: LayoutData =
         "transforms": {},
         "topics": {
           "/map": {
-            "visible": false
+            "visible": true
           },
           "/perception/fused_objects": {
             "visible": true
@@ -1766,7 +2420,7 @@ export const defaultLayout: LayoutData =
         "transforms": {},
         "topics": {
           "/map": {
-            "visible": false
+            "visible": true
           },
           "/perception/fused_objects": {
             "visible": true
@@ -1823,7 +2477,7 @@ export const defaultLayout: LayoutData =
         "transforms": {},
         "topics": {
           "/map": {
-            "visible": false
+            "visible": true
           },
           "/perception/fused_objects": {
             "visible": true
@@ -1851,19 +2505,18 @@ export const defaultLayout: LayoutData =
       },
       "3D!nodaym": {
         "cameraState": {
-          "perspective": true,
           "distance": 88.52082285122258,
+          "perspective": true,
           "phi": 42.85718470982174,
-          "thetaOffset": 129.34285714285792,
-          "targetOffset": [
-            1.8695588684909588,
-            -0.4070879067037742,
-            2.2482280961763336e-16
-          ],
           "target": [
             0,
             0,
             0
+          ],
+          "targetOffset": [
+            1.8695588684909588,
+            -0.4070879067037742,
+            2.2482280961763336e-16
           ],
           "targetOrientation": [
             0,
@@ -1871,6 +2524,7 @@ export const defaultLayout: LayoutData =
             0,
             1
           ],
+          "thetaOffset": 129.34285714285792,
           "fovy": 45,
           "near": 0.5,
           "far": 5000
@@ -1964,6 +2618,147 @@ export const defaultLayout: LayoutData =
             "visible": true
           },
           "/calib/cam_frb": {
+            "visible": true
+          },
+          "/calib/cam_flf": {
+            "visible": true
+          },
+          "/calib/cam_frf": {
+            "visible": true
+          },
+          "/perception/camera_locator_sign": {
+            "visible": true
+          },
+          "/perception/perception_freespace_boundary_layers": {
+            "visible": true
+          },
+          "/planning/planning_visualization/interactive_decision": {
+            "visible": true
+          },
+          "/planning/planning_visualization/path": {
+            "visible": true
+          },
+          "/planning/planning_visualization_org/interactive_decision_org": {
+            "visible": true
+          },
+          "/prediction/prediction_obstacles": {
+            "visible": true
+          },
+          "/prediction/prediction_obstacles_org": {
+            "visible": true
+          },
+          "/region/task_manager/task_request_list": {
+            "visible": true
+          },
+          "/router/routing": {
+            "visible": true
+          },
+          "/sensor_table/sensor_table": {
+            "visible": false
+          },
+          "/utosim/perception/perception_traffic_signals": {
+            "visible": true
+          },
+          "/utosim/task_manager/task_path": {
+            "visible": true
+          },
+          "/utosim/task_manager/task_request_list": {
+            "visible": true
+          },
+          "/perception/freespace_truth": {
+            "visible": true,
+            "colorField": "z",
+            "colorMode": "colormap",
+            "colorMap": "turbo"
+          },
+          "/sim_viz/locator/vehicle_pose": {
+            "visible": true
+          },
+          "/sim_viz/locator/vehicle_pose_org": {
+            "visible": true
+          },
+          "/sim_viz/perception/camera_locator_sign": {
+            "visible": true
+          },
+          "/sim_viz/perception/freespace_truth": {
+            "visible": false,
+            "colorField": "x",
+            "colorMode": "colormap",
+            "colorMap": "turbo"
+          },
+          "/sim_viz/perception/fused_objects": {
+            "visible": true
+          },
+          "/sim_viz/perception/fused_objects_org": {
+            "visible": true
+          },
+          "/sim_viz/perception/fused_objects_truth": {
+            "visible": true
+          },
+          "/sim_viz/perception/lidar_freespace": {
+            "visible": false
+          },
+          "/sim_viz/perception/perception_freespace": {
+            "visible": true,
+            "colorField": "x",
+            "colorMode": "colormap",
+            "colorMap": "turbo"
+          },
+          "/sim_viz/perception/perception_freespace_boundary_layers": {
+            "visible": true
+          },
+          "/sim_viz/perception/perception_gates": {
+            "visible": true
+          },
+          "/sim_viz/perception/perception_parking_slots": {
+            "visible": true
+          },
+          "/sim_viz/perception/perception_traffic_signals": {
+            "visible": true
+          },
+          "/sim_viz/perception/predicted_objects": {
+            "visible": true
+          },
+          "/sim_viz/perception/predicted_objects_org": {
+            "visible": true
+          },
+          "/sim_viz/planning/planning_visualization/base": {
+            "visible": true
+          },
+          "/sim_viz/planning/planning_visualization/interactive_decision": {
+            "visible": true
+          },
+          "/sim_viz/planning/planning_visualization/path": {
+            "visible": false
+          },
+          "/sim_viz/planning/planning_visualization/trailer_angle": {
+            "visible": true
+          },
+          "/sim_viz/planning/planning_visualization_org": {
+            "visible": true
+          },
+          "/sim_viz/planning/planning_visualization_org/base": {
+            "visible": true
+          },
+          "/sim_viz/planning/planning_visualization_org/interactive_decision": {
+            "visible": true
+          },
+          "/sim_viz/prediction/prediction_obstacles": {
+            "visible": true
+          },
+          "/sim_viz/prediction/prediction_obstacles_org": {
+            "visible": true
+          },
+          "/sim_viz/region/task_manager/task_request_list": {
+            "visible": true
+          },
+          "/sim_viz/router/routing": {
+            "visible": true
+          },
+          "/sim_viz/task_manager/task_path": {
+            "visible": true
+          },
+          "/sim_viz/task_manager/task_request_list": {
             "visible": true
           }
         },

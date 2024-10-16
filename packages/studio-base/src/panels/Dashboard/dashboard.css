@@ -338,3 +338,21 @@
 .tadviz-angle-info {
     flex: 1;
 }
+
+.uto-circle {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.uto-circle-green {
+    background-color: #62bd19;
+}
+
+.uto-circle-red {
+    background-color: #dd6a46;
+}
+
+.uto-circle-gray {
+    background-color: #bfc0c6;
+}
