@@ -73,6 +73,7 @@ function keepDecimalPlaces(num: number | string, decimalPlaces = 3) {
 
 function Dashboard(): JSX.Element {
   const topicPath  = "/utosim/dashboard";
+  const simTopicPath = "/hal/chassis_info";
 
   const vehicleDrivingInfo = {
     speed: "N/A",
@@ -120,21 +121,34 @@ function Dashboard(): JSX.Element {
       lateral_control_mode: -1,
       longitudinal_control_mode: -1,
       road_error: 0,
-    },
-    horn_on: null
+    }
   };
   const topicRosPath: RosPath | undefined = React.useMemo(
     () => parseRosPath(topicPath),
     [topicPath],
   );
+  const simTopicRosPath: RosPath | undefined = React.useMemo(
+    () => parseRosPath(simTopicPath),
+    [simTopicPath],
+  );
   const topicName = topicRosPath?.topicName ?? "";
+  const simTopicName = simTopicRosPath?.topicName ?? "";
   const msgs = useMessagesByTopic({ topics: [topicName], historySize: 1 })[topicName];
+  const simMsgs = useMessagesByTopic({ topics: [simTopicName], historySize: 1 })[simTopicName];
   const cachedGetMessagePathDataItems = useCachedGetMessagePathDataItems([topicPath]);
+  const cachedGetMessageSimPathDataItems = useCachedGetMessagePathDataItems([simTopicPath]);
   const msg = msgs?.[0];
+  const simMsg = simMsgs?.[0];
   const cachedMessages = msg ? cachedGetMessagePathDataItems(topicPath, msg) ?? [] : [];
+  const cachedSimMessages = simMsg ? cachedGetMessageSimPathDataItems(simTopicPath, simMsg) ?? [] : [];
   const firstCachedMessage: any = cachedMessages[0]?.value;
+  const firstSimCachedMessage: any = cachedSimMessages[0]?.value;
 
   const [vehicleInfo, setVehicleInfo] = useState(vehicleDrivingInfo);
+
+  const [vehicleSimInfo, setVehicleSimInfo] = useState({
+    horn_on: 'false'
+  });
 
   useEffect(()=> {
     if (firstCachedMessage) {
@@ -162,10 +176,19 @@ function Dashboard(): JSX.Element {
   }, [firstCachedMessage])
 
 
+  useEffect(()=> {
+    if(firstSimCachedMessage) {
+      const metaMessage: any = cloneDeep(firstSimCachedMessage)
+      setVehicleSimInfo({
+        horn_on: String(metaMessage.actuator_info.horn_on)
+      })
+    }
+  }, [firstSimCachedMessage])
+
   function Circle () {
-    if (vehicleInfo.horn_on === 'true') {
+    if (vehicleSimInfo.horn_on === 'true') {
       return <div className={"uto-circle uto-circle-green"}></div>
-    } else if (vehicleInfo.horn_on === 'false') {
+    } else if (vehicleSimInfo.horn_on === 'false') {
       return <div className={"uto-circle uto-circle-red"}></div>
     } else {
       return <div className={"uto-circle uto-circle-gray"}></div>
@@ -429,8 +452,8 @@ function Dashboard(): JSX.Element {
                 {
                   Circle()
                 }
-                <div className={"tadviz-value"}>
-                  { vehicleInfo.horn_on }
+                <div className={"tadviz-value"} style={{marginLeft: '10px'}}>
+                  { vehicleSimInfo.horn_on }
                 </div>
               </div>
             </div>
