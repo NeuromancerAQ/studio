@@ -17,7 +17,7 @@ import "./stPoligonGraph.css";
 let idPos: any[] = []
 
 function StPoligonGraph(): JSX.Element {
-  const topicPath = '/planning/planning_visualization/st_graph';
+  const topicPath = '/sim_viz/planning/planning_visualization/st_graph';
 
   const topicRosPath: RosPath | undefined = React.useMemo(
     () => parseRosPath(topicPath),
