@@ -18,6 +18,7 @@ export type RawMessagesPanelConfig = {
   showFullMessageForDiff: boolean;
   topicPath: string;
   fontSize: number | undefined;
+  realTime: boolean;
 };
 
 export const Constants = {

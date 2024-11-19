@@ -56,6 +56,7 @@ import {
 } from "./getValueActionForValue";
 import { Constants, NodeState, RawMessagesPanelConfig } from "./types";
 import { DATA_ARRAY_PREVIEW_LIMIT, generateDeepKeyPaths, toggleExpansion } from "./utils";
+import { MessagePipelineContext, useMessagePipeline } from "@foxglove/studio-base/components/MessagePipeline";
 
 type Props = {
   config: Immutable<RawMessagesPanelConfig>;
@@ -84,7 +85,10 @@ const useStyles = makeStyles()((theme) => ({
   },
 }));
 
+const selectCurrentTime = (ctx: MessagePipelineContext) => ctx.playerState.activeData?.currentTime;
+
 function RawMessages(props: Props) {
+  const currentTime = useMessagePipeline(selectCurrentTime);
   const {
     palette: { mode: themePreference },
   } = useTheme();
@@ -92,7 +96,7 @@ function RawMessages(props: Props) {
   const jsonTreeTheme = useJsonTreeTheme();
   const { config, saveConfig } = props;
   const { openSiblingPanel } = usePanelContext();
-  const { topicPath, diffMethod, diffTopicPath, diffEnabled, showFullMessageForDiff, fontSize } =
+  const { topicPath, diffMethod, diffTopicPath, diffEnabled, showFullMessageForDiff, fontSize, realTime } =
     config;
   const { topics, datatypes } = useDataSourceInfo();
   const updatePanelSettingsTree = usePanelSettingsTreeUpdate();
@@ -148,7 +152,9 @@ function RawMessages(props: Props) {
 
   // Pass an empty path to useMessageDataItem if our path doesn't resolve to a valid topic to avoid
   // spamming the message pipeline with useless subscription requests.
-  const matchedMessages = useMessageDataItem(topic ? topicPath : "", { historySize: 2 });
+  const matchedMessages = useMessageDataItem(topic ? topicPath : "", {
+    historySize: 2,
+  });
   const diffMessages = useMessageDataItem(diffEnabled ? diffTopicPath : "");
 
   const diffTopicObj = diffMessages[0];
@@ -156,7 +162,18 @@ function RawMessages(props: Props) {
   const prevTickObj = matchedMessages[matchedMessages.length - 2];
 
   const inTimetickDiffMode = diffEnabled && diffMethod === Constants.PREV_MSG_METHOD;
-  const baseItem = inTimetickDiffMode ? prevTickObj : currTickObj;
+  // const baseItem = inTimetickDiffMode ? prevTickObj : currTickObj;
+
+  // 修改 baseItem 的逻辑，增加实时数据清空的处理
+  const baseItem = useMemo(() => {
+    const receive = currTickObj?.messageEvent?.receiveTime?.sec
+    const current = currentTime?.sec
+    if (realTime && receive && current && (receive < current)) {
+      return null; // 实时模式下，如果没有新的数据，清空面板
+    }
+    return inTimetickDiffMode ? prevTickObj : currTickObj;
+  }, [realTime, inTimetickDiffMode, currTickObj, prevTickObj, currentTime]);
+
   const diffItem = inTimetickDiffMode ? currTickObj : diffTopicObj;
 
   const nodes = useMemo(() => {
@@ -381,7 +398,7 @@ function RawMessages(props: Props) {
     }
 
     if (!baseItem) {
-      return <EmptyState>Waiting for next message…</EmptyState>;
+      return realTime ? <EmptyState>Real-time mode: No data received</EmptyState> : <EmptyState>Waiting for next message…</EmptyState>;
     }
 
     const data = dataWithoutWrappingArray(baseItem.queriedData.map(({ value }) => value));
@@ -616,6 +633,7 @@ function RawMessages(props: Props) {
     baseItem,
     classes.topic,
     fontSize,
+    realTime,
     diffEnabled,
     diffItem,
     diffMethod,
@@ -644,6 +662,11 @@ function RawMessages(props: Props) {
                 action.payload.value != undefined ? (action.payload.value as number) : undefined,
             });
           }
+          if(action.payload.path[1] === "realTime") {
+            saveConfig({
+              realTime: action.payload.value as boolean,
+            });
+          }
         }
       }
     },
@@ -669,11 +692,16 @@ function RawMessages(props: Props) {
               ],
               value: fontSize,
             },
+            realTime: {
+              label: "Real time",
+              input: "boolean",
+              value: realTime
+            }
           },
         },
       },
     });
-  }, [actionHandler, fontSize, updatePanelSettingsTree]);
+  }, [actionHandler, fontSize, realTime, updatePanelSettingsTree]);
 
   return (
     <Stack flex="auto" overflow="hidden" position="relative">
@@ -701,6 +729,7 @@ const defaultConfig: RawMessagesPanelConfig = {
   showFullMessageForDiff: false,
   topicPath: "",
   fontSize: undefined,
+  realTime: false
 };
 
 export default Panel(
